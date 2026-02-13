@@ -1,0 +1,75 @@
+{
+  "version": "1.0.0",
+  "labels": [
+    {
+      "name": "bug",
+      "color": "d73a4a",
+      "description": "不具合の報告"
+    },
+    {
+      "name": "feature",
+      "color": "0e8a16",
+      "description": "新機能の追加"
+    },
+    {
+      "name": "enhancement",
+      "color": "a2eeef",
+      "description": "既存機能の改善"
+    },
+    {
+      "name": "docs",
+      "color": "0075ca",
+      "description": "ドキュメントの追加・更新"
+    },
+    {
+      "name": "refactor",
+      "color": "d4c5f9",
+      "description": "リファクタリング"
+    },
+    {
+      "name": "test",
+      "color": "bfd4f2",
+      "description": "テストの追加・修正"
+    },
+    {
+      "name": "chore",
+      "color": "ededed",
+      "description": "ビルド・依存関係・設定の変更"
+    },
+    {
+      "name": "design",
+      "color": "f9d0c4",
+      "description": "UIデザイン・レイアウト関連"
+    },
+    {
+      "name": "a11y",
+      "color": "c5def5",
+      "description": "アクセシビリティの改善"
+    },
+    {
+      "name": "performance",
+      "color": "fbca04",
+      "description": "パフォーマンス改善"
+    },
+    {
+      "name": "priority: high",
+      "color": "b60205",
+      "description": "優先度: 高"
+    },
+    {
+      "name": "priority: medium",
+      "color": "ff9f1c",
+      "description": "優先度: 中"
+    },
+    {
+      "name": "priority: low",
+      "color": "c2e0c6",
+      "description": "優先度: 低"
+    },
+    {
+      "name": "wontfix",
+      "color": "ffffff",
+      "description": "対応しない"
+    }
+  ]
+}
