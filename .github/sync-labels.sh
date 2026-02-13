@@ -28,7 +28,7 @@ for i in $(seq 0 $(($COUNT - 1))); do
   DESC=$(jq -r ".labels[$i].description" "$LABELS_FILE")
 
   # ラベルが存在するか確認
-  if gh label list --repo "$REPO" --json name -q ".[].name" | grep -qx "$NAME"; then
+  if gh label list --repo "$REPO" --json name -q ".[].name" | grep -Fxq "$NAME"; then
     gh label edit "$NAME" --repo "$REPO" --color "$COLOR" --description "$DESC" 2>/dev/null
     echo "  Updated: $NAME"
   else
