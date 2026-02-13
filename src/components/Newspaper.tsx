@@ -1,27 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import type { NewspaperProps } from "@/types";
-
-// -- Utility --
-
-function formatDate(d: string) {
-  const dt = new Date(d);
-  const wd = ["日", "月", "火", "水", "木", "金", "土"][dt.getDay()];
-  return `${dt.getFullYear()}年${dt.getMonth() + 1}月${dt.getDate()}日（${wd}）`;
-}
-
-function shortDate(d: string) {
-  const dt = new Date(d);
-  return `${dt.getMonth() + 1}/${dt.getDate()}`;
-}
-
-function daysAgo(d: string) {
-  return Math.max(
-    0,
-    Math.floor((Date.now() - new Date(d).getTime()) / 86400000)
-  );
-}
+import type { NewspaperProps, GitHubEvent } from "@/types";
+import {
+  formatDate,
+  shortDate,
+  daysAgo,
+  isContentRepo,
+  sortByRelevance,
+  cleanBio,
+  prColor,
+  groupPushEventsByRepo,
+} from "@/lib/utils";
 
 // -- SVG Icons --
 
@@ -75,7 +65,7 @@ function Tag({
 
 function SideHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="font-serif text-[0.92em] border-b-2 border-primary dark:border-neutral-400 pb-1 mt-5 mb-2.5 font-bold tracking-wide">
+    <h3 className="font-serif text-[0.92em] border-b-2 border-primary dark:border-border-dark pb-1 mt-5 mb-2.5 font-bold tracking-wide">
       {children}
     </h3>
   );
@@ -98,7 +88,7 @@ function StatRow({
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-serif text-xl font-bold border-b-2 border-primary dark:border-neutral-400 pb-1.5 mb-4 mt-10 tracking-wide">
+    <h2 className="font-serif text-xl font-bold border-b-2 border-primary dark:border-border-dark pb-1.5 mb-4 mt-10 tracking-wide">
       {children}
     </h2>
   );
@@ -142,15 +132,6 @@ function Avatar({
   );
 }
 
-// -- PR action color --
-
-function prColor(action?: string) {
-  if (action === "merged") return "#238636";
-  if (action === "opened") return "#6f42c1";
-  if (action === "closed") return "#cf222e";
-  return "#666";
-}
-
 // -- Main Component --
 
 export default function Newspaper({
@@ -165,16 +146,8 @@ export default function Newspaper({
   const repos = gh?.repos || [];
   const articles = zenn?.articles || [];
 
-  // ブログ/コンテンツ系リポジトリを低優先化
-  const isContentRepo = (name: string) =>
-    /[-_](content|blog|articles|posts|zenn)/i.test(name);
-  const sortByRelevance = <T extends { repo?: { name: string } }>(arr: T[]) => {
-    const product = arr.filter((e) => !isContentRepo(e.repo?.name || ""));
-    const content = arr.filter((e) => isContentRepo(e.repo?.name || ""));
-    return [...product, ...content];
-  };
-  const pushEvents = sortByRelevance(events.filter((e) => e.type === "PushEvent"));
-  const prEvents = sortByRelevance(events.filter((e) => e.type === "PullRequestEvent"));
+  const pushEvents = sortByRelevance<GitHubEvent>(events.filter((e) => e.type === "PushEvent"));
+  const prEvents = sortByRelevance<GitHubEvent>(events.filter((e) => e.type === "PullRequestEvent"));
   const issueEvents = events.filter(
     (e) => e.type === "IssuesEvent" || e.type === "IssueCommentEvent"
   );
@@ -207,8 +180,8 @@ export default function Newspaper({
   return (
     <div className="max-w-[1100px] mx-auto leading-relaxed">
       {/* Header */}
-      <header className="border-b-[3px] border-double border-primary dark:border-neutral-400 pb-5 mb-8">
-        <h1 className="font-serif text-[2.2em] text-center tracking-[0.14em] font-bold text-primary dark:text-neutral-100">
+      <header className="border-b-[3px] border-double border-primary dark:border-border-dark pb-5 mb-8">
+        <h1 className="font-serif text-[2.2em] text-center tracking-[0.14em] font-bold text-primary dark:text-text-dark">
           週刊デベロッパー・クロニクル
         </h1>
         <p className="text-center text-text-muted dark:text-text-dark-muted text-[0.88em] mt-1.5">
@@ -233,7 +206,7 @@ export default function Newspaper({
           {hasGH && profile && (
             <>
               <Tag c="#24292e">GitHub</Tag>
-              <h2 className="font-serif text-[1.5em] font-bold mt-1.5 mb-3 leading-tight text-primary dark:text-neutral-100">
+              <h2 className="font-serif text-[1.5em] font-bold mt-1.5 mb-3 leading-tight text-primary dark:text-text-dark">
                 {totalCommits > 0
                   ? `${profile.name || ghUser}、直近で${totalCommits}件のコミットを記録`
                   : `${profile.name || ghUser}のGitHub活動レポート`}
@@ -248,36 +221,31 @@ export default function Newspaper({
                   `${activeRepos.length}件のリポジトリで活動が見られた。`}
                 {` 公開リポジトリ数は${profile.public_repos || 0}件、獲得スター数は合計${totalStars}個。`}
                 {profile.bio && (() => {
-                  const cleanBio = profile.bio.replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
-                  return cleanBio ? ` プロフィール:「${cleanBio}」` : null;
+                  const bio = cleanBio(profile.bio);
+                  return bio ? ` プロフィール:「${bio}」` : null;
                 })()}
               </p>
 
               {/* 主要コミット */}
               {pushEvents.length > 0 && (() => {
-                const grouped = new Map<string, { commits: { sha: string; message: string }[]; latestDate: string; pushCount: number }>();
-                for (const e of pushEvents) {
-                  const repo = e.repo?.name?.split("/")[1] || "unknown";
-                  const prev = grouped.get(repo);
-                  const evCommits = (e.payload?.commits || []).map(c => ({ sha: c.sha, message: c.message }));
-                  if (prev) {
-                    prev.commits.push(...evCommits);
-                    if (e.created_at > prev.latestDate) prev.latestDate = e.created_at;
-                    prev.pushCount++;
-                  } else {
-                    grouped.set(repo, { commits: evCommits, latestDate: e.created_at, pushCount: 1 });
-                  }
-                }
+                const grouped = groupPushEventsByRepo(pushEvents);
                 return (
                   <>
                     <SubTitle><IconCommit />主要コミット</SubTitle>
-                    {[...grouped.entries()].slice(0, 5).map(([repo, { commits, latestDate, pushCount }]) => (
+                    {[...grouped.entries()].slice(0, 5).map(([repo, { fullName, commits, latestDate, pushCount }]) => (
                       <div
                         key={repo}
                         className="mb-3 pb-3 border-b border-border-light dark:border-border-dark text-[0.9em] animate-[fadeInUp_0.3s_ease]"
                       >
                         <div className="flex items-baseline gap-2 flex-wrap">
-                          <strong className="text-primary dark:text-neutral-200">{repo}</strong>
+                          <a
+                            href={`https://github.com/${fullName}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-bold text-primary dark:text-text-dark hover:text-accent dark:hover:text-blue-400 transition-colors cursor-pointer"
+                          >
+                            {repo}
+                          </a>
                           <span className="text-text-muted dark:text-text-dark-muted text-[0.82em]">
                             {commits.length > 0
                               ? `${commits.length}件のコミット`
@@ -295,9 +263,9 @@ export default function Newspaper({
                         {commits.length > 0 ? (
                           <div className="mt-1.5">
                             {commits
-                              .filter(c => c.message)
+                              .filter((c: { message: string }) => c.message)
                               .slice(0, 3)
-                              .map((c, j) => (
+                              .map((c: { message: string }, j: number) => (
                                 <div
                                   key={j}
                                   className="pl-3 border-l-2 border-accent/30 dark:border-accent/40 my-1.5 text-text-muted dark:text-text-dark-muted text-[0.88em] leading-6"
@@ -305,9 +273,9 @@ export default function Newspaper({
                                   {c.message.split("\n")[0]}
                                 </div>
                               ))}
-                            {commits.filter(c => c.message).length > 3 && (
+                            {commits.filter((c: { message: string }) => c.message).length > 3 && (
                               <span className="text-[0.78em] text-text-muted dark:text-text-dark-muted pl-3">
-                                …他{commits.filter(c => c.message).length - 3}件
+                                …他{commits.filter((c: { message: string }) => c.message).length - 3}件
                               </span>
                             )}
                           </div>
@@ -322,19 +290,33 @@ export default function Newspaper({
               {prEvents.length > 0 && (
                 <>
                   <SubTitle><IconPR />プルリクエスト動向</SubTitle>
-                  {prEvents.slice(0, 5).map((e, i) => {
+                  {prEvents.slice(0, 5).map((e: typeof prEvents[number], i: number) => {
                     const pr = e.payload?.pull_request;
                     const title = pr?.title
                       || (pr?.number ? `#${pr.number}` : e.repo?.name?.split("/")[1] || "PR");
+                    const prUrl = pr?.html_url || `https://github.com/${e.repo?.name}`;
+                    const repoShort = e.repo?.name?.split("/")[1];
                     return (
                       <div key={i} className="mb-2 pb-2 border-b border-border-light dark:border-border-dark text-[0.9em] flex items-baseline gap-1.5 flex-wrap">
                         <Tag c={prColor(e.payload?.action)}>
                           {e.payload?.action}
                         </Tag>
-                        <strong className="text-primary dark:text-neutral-200">{title}</strong>
-                        <span className="text-text-muted dark:text-text-dark-muted text-[0.82em]">
-                          {e.repo?.name?.split("/")[1]}
-                        </span>
+                        <a
+                          href={prUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-bold text-primary dark:text-text-dark hover:text-accent dark:hover:text-blue-400 transition-colors cursor-pointer"
+                        >
+                          {title}
+                        </a>
+                        <a
+                          href={`https://github.com/${e.repo?.name}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-text-muted dark:text-text-dark-muted text-[0.82em] hover:text-accent dark:hover:text-blue-400 transition-colors cursor-pointer"
+                        >
+                          {repoShort}
+                        </a>
                         <span className="text-text-muted dark:text-text-dark-muted text-[0.78em]">
                           {shortDate(e.created_at)}
                         </span>
@@ -350,7 +332,7 @@ export default function Newspaper({
           {hasZenn && (
             <div className={hasGH ? "mt-8" : ""}>
               <Tag c="#3ea8ff">Zenn</Tag>
-              <h2 className="font-serif text-[1.5em] font-bold mt-1.5 mb-3 leading-tight text-primary dark:text-neutral-100">
+              <h2 className="font-serif text-[1.5em] font-bold mt-1.5 mb-3 leading-tight text-primary dark:text-text-dark">
                 Zennで{articles.length}本の記事を公開中、合計
                 {totalLikes}いいね獲得
               </h2>
@@ -409,7 +391,7 @@ export default function Newspaper({
                 name={profile.name || ghUser}
                 url={profile.avatar_url}
               />
-              <div className="font-bold mt-2 text-primary dark:text-neutral-100">
+              <div className="font-bold mt-2 text-primary dark:text-text-dark">
                 {profile.name || ghUser}
               </div>
               {profile.location && (
@@ -489,7 +471,7 @@ export default function Newspaper({
                 rel="noopener noreferrer"
                 className="block border border-border-light dark:border-border-dark rounded-lg p-4 bg-surface-alt dark:bg-surface-dark-alt hover:border-accent/40 dark:hover:border-accent/40 transition-colors cursor-pointer"
               >
-                <div className="font-bold text-[0.9em] text-primary dark:text-neutral-200">
+                <div className="font-bold text-[0.9em] text-primary dark:text-text-dark">
                   {r.name}
                 </div>
                 {r.description && (
@@ -518,7 +500,7 @@ export default function Newspaper({
       {aiComment && (
         <section>
           <SectionTitle>AI編集者の所感</SectionTitle>
-          <div className="bg-surface-alt dark:bg-surface-dark-alt border-l-4 border-primary dark:border-neutral-400 p-5 font-serif leading-8 whitespace-pre-wrap text-text dark:text-text-dark rounded-r-lg">
+          <div className="bg-surface-alt dark:bg-surface-dark-alt border-l-4 border-primary dark:border-border-dark p-5 font-serif leading-8 whitespace-pre-wrap text-text dark:text-text-dark rounded-r-lg">
             {aiComment}
           </div>
         </section>

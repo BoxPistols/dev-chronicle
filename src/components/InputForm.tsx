@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import type { GitHubData, ZennData } from "@/types";
+import { isContentRepo, cleanBio } from "@/lib/utils";
 import Newspaper from "./Newspaper";
 
 type AIProvider = "openai" | "anthropic" | "gemini";
@@ -262,14 +263,11 @@ export default function InputForm() {
             .map((e) => e[0])
             .join(", ");
           // コード系リポジトリとコンテンツ系リポジトリを区別
-          const isContentRepo = (name: string) =>
-            /[-_](content|blog|articles|posts|zenn)/i.test(name);
           const codeRepos = [...new Set(ghData.events.map((e) => e.repo?.name))].filter(n => n && !isContentRepo(n));
           const contentRepos = [...new Set(ghData.events.map((e) => e.repo?.name))].filter(n => n && isContentRepo(n));
-          // bioからURLを除去
-          const cleanBio = (ghData.profile.bio || "").replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
+          const bio = cleanBio(ghData.profile.bio || "");
           parts.push(
-            `GitHub: ${ghu}, commits: ${tc}, code repos with activity: ${codeRepos.length} (${codeRepos.slice(0, 5).join(", ")}), content/blog repos: ${contentRepos.length}, public repos: ${ghData.profile.public_repos}, stars: ${stars}, top languages: ${topL}, PRs: ${ghData.events.filter((e) => e.type === "PullRequestEvent").length}${cleanBio ? `, bio: ${cleanBio}` : ""}`
+            `GitHub: ${ghu}, commits: ${tc}, code repos with activity: ${codeRepos.length} (${codeRepos.slice(0, 5).join(", ")}), content/blog repos: ${contentRepos.length}, public repos: ${ghData.profile.public_repos}, stars: ${stars}, top languages: ${topL}, PRs: ${ghData.events.filter((e) => e.type === "PullRequestEvent").length}${bio ? `, bio: ${bio}` : ""}`
           );
           parts.push(
             "注意: コンテンツ/ブログ系リポジトリ(zenn-contentなど)のコミットは記事投稿であり、プロダクト開発のコミットとは区別してください。プロフィールのURL先(Dribbble, Medium等)の内容には言及しないでください。"
@@ -364,7 +362,7 @@ export default function InputForm() {
 
           <div
             ref={newspaperRef}
-            className="bg-surface dark:bg-[#1a1a2e] text-text dark:text-text-dark max-w-[1200px] mx-auto p-6 md:p-10 shadow-lg rounded-xl dark-transition"
+            className="bg-surface dark:bg-surface-dark-alt text-text dark:text-text-dark max-w-[1200px] mx-auto p-6 md:p-10 shadow-lg rounded-xl dark-transition"
           >
             <Newspaper
               gh={gh}

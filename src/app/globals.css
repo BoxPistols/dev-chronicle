@@ -10,14 +10,14 @@
   --color-accent-hover: #1d4ed8;
   --color-surface: #ffffff;
   --color-surface-alt: #f8f6f2;
-  --color-surface-dark: #0f0f1a;
-  --color-surface-dark-alt: #16213e;
+  --color-surface-dark: #181825;
+  --color-surface-dark-alt: #1e1e32;
   --color-border-light: #e5e2dc;
-  --color-border-dark: #2a2a40;
+  --color-border-dark: #333348;
   --color-text: #1e293b;
   --color-text-muted: #64748b;
-  --color-text-dark: #e2e8f0;
-  --color-text-dark-muted: #94a3b8;
+  --color-text-dark: #cdd6e4;
+  --color-text-dark-muted: #8892a6;
   --color-success: #16a34a;
   --color-error: #dc2626;
 }
