@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import type { NewspaperProps, GitHubEvent } from "@/types";
+import { useState, useEffect, useRef } from "react";
+import type { NewspaperProps, GitHubEvent, ContributionCalendar } from "@/types";
 import {
   formatDate,
   shortDate,
@@ -99,6 +99,109 @@ function SubTitle({ children }: { children: React.ReactNode }) {
     <h3 className="font-serif text-base font-bold mt-6 mb-2.5 border-b border-border-light dark:border-border-dark pb-1 flex items-center gap-1.5">
       {children}
     </h3>
+  );
+}
+
+// -- Contribution Graph --
+
+const LEVEL_COLORS_LIGHT = [
+  "#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39",
+];
+const LEVEL_COLORS_DARK = [
+  "#161b22", "#0e4429", "#006d32", "#26a641", "#39d353",
+];
+
+const MONTH_LABELS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+function ContributionGraph({
+  data,
+}: {
+  data: ContributionCalendar;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      setIsDark(!!containerRef.current.closest(".dark"));
+    }
+  });
+
+  const colors = isDark ? LEVEL_COLORS_DARK : LEVEL_COLORS_LIGHT;
+  const cellSize = 10;
+  const cellGap = 2;
+  const step = cellSize + cellGap;
+  const weeks = data.weeks;
+  const svgW = weeks.length * step + 30;
+  const svgH = 7 * step + 22;
+
+  // 月ラベルの位置を計算
+  const monthPositions: { label: string; x: number }[] = [];
+  let lastMonth = -1;
+  weeks.forEach((w, wi) => {
+    if (w.days.length === 0) return;
+    const d = new Date(w.days[0].date);
+    const m = d.getMonth();
+    if (m !== lastMonth) {
+      monthPositions.push({ label: MONTH_LABELS[m], x: wi * step + 30 });
+      lastMonth = m;
+    }
+  });
+
+  return (
+    <div ref={containerRef} className="mt-3 mb-2">
+      <div className="text-[0.82em] font-semibold text-text-muted dark:text-text-dark-muted mb-1.5">
+        {data.total.toLocaleString()} contributions in the last year
+      </div>
+      <div className="overflow-x-auto">
+        <svg width={svgW} height={svgH} className="block">
+          {/* 月ラベル */}
+          {monthPositions.map((mp, i) => (
+            <text
+              key={i}
+              x={mp.x}
+              y={10}
+              className="fill-text-muted dark:fill-text-dark-muted"
+              fontSize="9"
+            >
+              {mp.label}
+            </text>
+          ))}
+          {/* セル */}
+          {weeks.map((w, wi) =>
+            w.days.map((d, di) => (
+              <rect
+                key={`${wi}-${di}`}
+                x={wi * step + 30}
+                y={di * step + 16}
+                width={cellSize}
+                height={cellSize}
+                rx={2}
+                fill={colors[d.level]}
+              >
+                <title>
+                  {d.date}: {d.count} contributions
+                </title>
+              </rect>
+            ))
+          )}
+        </svg>
+      </div>
+      <div className="flex items-center gap-1 justify-end mt-1 text-[0.72em] text-text-muted dark:text-text-dark-muted">
+        <span>Less</span>
+        {colors.map((c, i) => (
+          <span
+            key={i}
+            className="inline-block w-[10px] h-[10px] rounded-sm"
+            style={{ background: c }}
+          />
+        ))}
+        <span>More</span>
+      </div>
+    </div>
   );
 }
 
@@ -345,7 +448,7 @@ export default function Newspaper({
               </p>
 
               <SubTitle>最新の記事</SubTitle>
-              {articles.slice(0, 8).map((a, i) => (
+              {articles.filter((a) => a.liked_count > 0).slice(0, 8).map((a, i) => (
                 <div
                   key={i}
                   className="mb-3 pb-2.5 border-b border-border-light dark:border-border-dark"
@@ -387,18 +490,58 @@ export default function Newspaper({
         <aside className="bg-surface-alt dark:bg-surface-dark-alt p-5 border border-border-light dark:border-border-dark rounded-lg text-[0.86em] h-fit">
           {hasGH && profile && (
             <div className="text-center mb-4">
-              <Avatar
-                name={profile.name || ghUser}
-                url={profile.avatar_url}
-              />
-              <div className="font-bold mt-2 text-primary dark:text-text-dark">
+              <a href={`https://github.com/${ghUser}`} target="_blank" rel="noopener noreferrer">
+                <Avatar
+                  name={profile.name || ghUser}
+                  url={profile.avatar_url}
+                />
+              </a>
+              <a
+                href={`https://github.com/${ghUser}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block font-bold mt-2 text-primary dark:text-text-dark hover:text-accent dark:hover:text-blue-400 transition-colors"
+              >
                 {profile.name || ghUser}
-              </div>
+              </a>
               {profile.location && (
                 <div className="text-text-muted dark:text-text-dark-muted text-[0.85em] mt-0.5">
                   {profile.location}
                 </div>
               )}
+              <div className="flex justify-center gap-3 mt-2 text-[0.8em]">
+                <a
+                  href={`https://github.com/${ghUser}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-text-muted dark:text-text-dark-muted hover:text-accent dark:hover:text-blue-400 transition-colors"
+                >
+                  GitHub
+                </a>
+                {zennUser && (
+                  <a
+                    href={`https://zenn.dev/${zennUser}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-text-muted dark:text-text-dark-muted hover:text-accent dark:hover:text-blue-400 transition-colors"
+                  >
+                    Zenn
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+          {/* GitHub/Zenn links when no GH profile */}
+          {!hasGH && zennUser && (
+            <div className="text-center mb-4">
+              <a
+                href={`https://zenn.dev/${zennUser}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-primary dark:text-text-dark hover:text-accent dark:hover:text-blue-400 transition-colors"
+              >
+                {zennUser} (Zenn)
+              </a>
             </div>
           )}
 
@@ -458,12 +601,20 @@ export default function Newspaper({
         </aside>
       </div>
 
+      {/* Contribution Graph */}
+      {gh?.contributions && (
+        <section>
+          <SectionTitle>コントリビューション</SectionTitle>
+          <ContributionGraph data={gh.contributions} />
+        </section>
+      )}
+
       {/* Featured Repos */}
       {repos.length > 0 && (
         <section>
           <SectionTitle>注目リポジトリ</SectionTitle>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {repos.slice(0, 6).map((r, i) => (
+            {repos.slice(0, 12).map((r, i) => (
               <a
                 key={i}
                 href={r.html_url}

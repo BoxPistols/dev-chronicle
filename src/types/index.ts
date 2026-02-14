@@ -35,10 +35,26 @@ export interface GitHubRepo {
   html_url: string;
 }
 
+export interface ContributionDay {
+  date: string;
+  count: number;
+  level: number; // 0-4
+}
+
+export interface ContributionWeek {
+  days: ContributionDay[];
+}
+
+export interface ContributionCalendar {
+  total: number;
+  weeks: ContributionWeek[];
+}
+
 export interface GitHubData {
   profile: GitHubProfile;
   events: GitHubEvent[];
   repos: GitHubRepo[];
+  contributions?: ContributionCalendar;
 }
 
 export interface ZennArticle {
