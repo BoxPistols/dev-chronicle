@@ -104,7 +104,7 @@ async function _callGemini(
 
 // -- Rate limiting (in-memory, 3 requests/day per IP) --
 
-const DAILY_LIMIT = 3;
+const DAILY_LIMIT = 10;
 const rateLimitStore = new Map<string, number>();
 
 function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
 
     if (!allowed) {
       return NextResponse.json(
-        { error: "AI所感の生成は1日3回までです。明日またお試しください。" },
+        { error: "AI所感の生成は1日10回までです。明日またお試しください。" },
         {
           status: 429,
           headers: { "X-RateLimit-Remaining": "0" },
