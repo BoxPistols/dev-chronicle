@@ -22,14 +22,19 @@ interface ContribData {
 
 interface RepoInfo {
   name: string;
-  stars: number;
   language: string | null;
-  description: string | null;
 }
 
-interface ZennStats {
-  count: number;
+interface ZennArticleInfo {
+  title: string;
+  emoji: string;
   likes: number;
+}
+
+interface ZennData {
+  count: number;
+  totalLikes: number;
+  articles: ZennArticleInfo[];
 }
 
 interface LangStat {
@@ -67,7 +72,7 @@ const LANG_COLORS: Record<string, string> = {
 
 async function fetchAvatarBase64(url: string): Promise<string | null> {
   try {
-    const res = await fetch(`${url}&s=80`, { next: { revalidate: 300 } });
+    const res = await fetch(`${url}&s=96`, { next: { revalidate: 300 } });
     if (!res.ok) return null;
     const buffer = await res.arrayBuffer();
     const base64 = Buffer.from(buffer).toString("base64");
@@ -76,6 +81,14 @@ async function fetchAvatarBase64(url: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+function cleanBio(raw: string): string {
+  return raw
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 async function fetchGitHub(username: string) {
@@ -129,7 +142,7 @@ async function fetchGitHub(username: string) {
     0
   );
 
-  // Language stats with counts
+  // Language stats
   const langMap: Record<string, number> = {};
   repoList.forEach((r: { language?: string }) => {
     if (r.language) langMap[r.language] = (langMap[r.language] || 0) + 1;
@@ -141,30 +154,18 @@ async function fetchGitHub(username: string) {
     .map(([name, count]) => ({
       name,
       count,
-      percent: totalLangRepos > 0 ? Math.round((count / totalLangRepos) * 100) : 0,
+      percent:
+        totalLangRepos > 0 ? Math.round((count / totalLangRepos) * 100) : 0,
     }));
 
-  // Top repos by stars (non-fork)
+  // Top repos by recently updated (non-fork)
   const topRepos: RepoInfo[] = repoList
     .filter((r: { fork?: boolean }) => !r.fork)
-    .sort(
-      (a: { stargazers_count?: number }, b: { stargazers_count?: number }) =>
-        (b.stargazers_count || 0) - (a.stargazers_count || 0)
-    )
-    .slice(0, 5)
-    .map(
-      (r: {
-        name: string;
-        stargazers_count?: number;
-        language?: string;
-        description?: string;
-      }) => ({
-        name: r.name,
-        stars: r.stargazers_count || 0,
-        language: r.language || null,
-        description: r.description || null,
-      })
-    );
+    .slice(0, 6)
+    .map((r: { name: string; language?: string }) => ({
+      name: r.name,
+      language: r.language || null,
+    }));
 
   // Contributions (GraphQL)
   let contributions: ContribData | null = null;
@@ -215,18 +216,20 @@ async function fetchGitHub(username: string) {
     }
   }
 
-  // Fetch avatar as base64
+  // Avatar
   let avatarBase64: string | null = null;
   if (profile.avatar_url) {
     avatarBase64 = await fetchAvatarBase64(profile.avatar_url);
   }
+
+  const rawBio = profile.bio ? cleanBio(profile.bio) : null;
 
   return {
     profile: {
       name: profile.name,
       login: profile.login,
       avatar_url: profile.avatar_url,
-      bio: profile.bio,
+      bio: rawBio || null,
       public_repos: profile.public_repos,
       followers: profile.followers,
     } as ProfileData,
@@ -240,7 +243,7 @@ async function fetchGitHub(username: string) {
   };
 }
 
-async function fetchZenn(username: string): Promise<ZennStats | null> {
+async function fetchZenn(username: string): Promise<ZennData | null> {
   try {
     const res = await fetch(
       `https://zenn.dev/api/articles?username=${encodeURIComponent(username)}&order=latest&count=20`,
@@ -248,14 +251,30 @@ async function fetchZenn(username: string): Promise<ZennStats | null> {
     );
     if (!res.ok) return null;
     const data = await res.json();
-    const articles = data.articles || [];
+    const rawArticles: {
+      title?: string;
+      emoji?: string;
+      liked_count?: number;
+    }[] = data.articles || [];
+
+    const allArticles = rawArticles.map((a) => ({
+      title: a.title || "",
+      emoji: a.emoji || "",
+      likes: a.liked_count || 0,
+    }));
+
+    const totalLikes = allArticles.reduce((s, a) => s + a.likes, 0);
+
+    // Filter out 0-like articles, sort by likes desc, take top 6
+    const topArticles = allArticles
+      .filter((a) => a.likes > 0)
+      .sort((a, b) => b.likes - a.likes)
+      .slice(0, 6);
+
     return {
-      count: articles.length,
-      likes: articles.reduce(
-        (s: number, a: { liked_count?: number }) =>
-          s + (a.liked_count || 0),
-        0
-      ),
+      count: allArticles.length,
+      totalLikes,
+      articles: topArticles,
     };
   } catch {
     return null;
@@ -264,7 +283,7 @@ async function fetchZenn(username: string): Promise<ZennStats | null> {
 
 // -- SVG Helpers --
 
-function escapeXml(s: string): string {
+function esc(s: string): string {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -272,20 +291,20 @@ function escapeXml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function truncate(s: string, max: number): string {
+function trunc(s: string, max: number): string {
   if (s.length <= max) return s;
-  return s.slice(0, max - 1) + "...";
+  return s.slice(0, max - 1) + "\u2026";
 }
 
-// -- SVG Icons (12x12 viewBox paths) --
+// -- SVG Icons (12x12) --
 
 const ICON = {
-  commit: `<path d="M6 1a5 5 0 0 0-3.5 8.57v.01A5 5 0 0 0 6 11a5 5 0 0 0 3.5-1.42A5 5 0 0 0 6 1zm0 7.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>`,
+  contrib: `<path d="M6 1a5 5 0 0 0-3.5 8.57v.01A5 5 0 0 0 6 11a5 5 0 0 0 3.5-1.42A5 5 0 0 0 6 1zm0 7.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>`,
   pr: `<path d="M3 2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0 7a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm9 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM1.5 4v4M10.5 4v4M1.5 4c0-1 .5-2 2-2h3M10.5 4c0-1-.5-2-2-2h-3"/>`,
   star: `<path d="M6 .5l1.76 3.57 3.94.57-2.85 2.78.67 3.93L6 9.5l-3.52 1.85.67-3.93L.3 4.64l3.94-.57z"/>`,
   repo: `<path d="M1 1.75C1 .784 1.784 0 2.75 0h6.5C10.216 0 11 .784 11 1.75v8.5A1.75 1.75 0 019.25 12H2.75A1.75 1.75 0 011 10.25zm1.75-.25a.25.25 0 00-.25.25v8.5c0 .138.112.25.25.25h6.5a.25.25 0 00.25-.25v-8.5a.25.25 0 00-.25-.25zM3.5 3h5v1.5h-5z"/>`,
   followers: `<path d="M5.5 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm4-1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM1 10.5c0-2 1.5-3.5 4.5-3.5s4.5 1.5 4.5 3.5v.5H1zm8-1c1.5.3 2.5 1 2.5 2v.5h-2"/>`,
-  zenn: `<path d="M1.5 1L6 11l4.5-10M1.5 6h9"/>`,
+  heart: `<path d="M6 10.5C3.5 8.5 1 6.5 1 4.5 1 2.5 2.5 1 4 1c1 0 1.7.5 2 1 .3-.5 1-1 2-1 1.5 0 3 1.5 3 3.5 0 2-2.5 4-5 6z"/>`,
 };
 
 // -- SVG Generation --
@@ -300,7 +319,7 @@ function generateSvg(opts: {
   topRepos: RepoInfo[];
   contributions: ContribData | null;
   avatarBase64: string | null;
-  zenn: ZennStats | null;
+  zenn: ZennData | null;
   zennUser: string;
   dark: boolean;
 }) {
@@ -319,8 +338,8 @@ function generateSvg(opts: {
     dark,
   } = opts;
 
-  const W = 500;
-  const PAD = 20;
+  const W = 600;
+  const PAD = 24;
   const INNER = W - PAD * 2;
 
   // Colors
@@ -330,219 +349,231 @@ function generateSvg(opts: {
   const textMain = dark ? "#e6edf3" : "#1f2328";
   const textSub = dark ? "#8b949e" : "#656d76";
   const accent = dark ? "#58a6ff" : "#0969da";
-  const accentSoft = dark ? "rgba(56,139,253,0.15)" : "rgba(9,105,218,0.08)";
+  const accentSoft = dark
+    ? "rgba(56,139,253,0.15)"
+    : "rgba(9,105,218,0.08)";
+  const heartColor = dark ? "#f778ba" : "#cf222e";
   const contribColors = dark
     ? ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"]
     : ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"];
 
-  const displayName = escapeXml(profile.name || profile.login);
-  const bio = profile.bio ? escapeXml(truncate(profile.bio.replace(/\n/g, " "), 80)) : "";
+  const displayName = esc(profile.name || profile.login);
+  const bio =
+    profile.bio && profile.bio.length > 0
+      ? esc(trunc(profile.bio, 70))
+      : "";
 
   const hasContrib = contributions && contributions.total > 0;
   const hasZenn = zenn && zennUser;
+  const hasZennArticles = hasZenn && zenn!.articles.length > 0;
   const hasRepos = topRepos.length > 0;
+  const hasLangs = langStats.length > 0;
 
-  // -- Calculate total height --
-  const headerH = bio ? 90 : 72;
-  const summaryH = 54;
-  const contribH = hasContrib ? 104 : 0;
-  const langH = langStats.length > 0 ? 24 + langStats.length * 24 + 12 : 0;
-  const repoH = hasRepos ? 24 + topRepos.length * 22 + 12 : 0;
-  const langsAndReposH = Math.max(langH, repoH);
-  const zennH = hasZenn ? 54 : 0;
-  const footerH = 8;
-  const totalH = headerH + summaryH + contribH + langsAndReposH + zennH + footerH;
+  // ---- Calculate total height ----
+  const headerH = bio ? 100 : 80;
+  const summaryH = 64;
+  const contribH = hasContrib ? 110 : 0;
+  const langRowH = 28;
+  const langSectionH = hasLangs ? 30 + langStats.length * langRowH + 8 : 0;
+  const repoRowH = 26;
+  const repoSectionH = hasRepos ? 30 + topRepos.length * repoRowH + 8 : 0;
+  const langsAndReposH = Math.max(langSectionH, repoSectionH);
+  const zennSummaryH = hasZenn ? 46 : 0;
+  const zennArticleRowH = 28;
+  const zennArticlesH = hasZennArticles
+    ? zenn!.articles.length * zennArticleRowH + 8
+    : 0;
+  const footerH = 12;
+  const totalH =
+    headerH +
+    summaryH +
+    contribH +
+    langsAndReposH +
+    zennSummaryH +
+    zennArticlesH +
+    footerH;
 
   let y = 0;
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${totalH}" viewBox="0 0 ${W} ${totalH}" fill="none">
 <style>
   .t{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}
   .main{fill:${textMain}}.sub{fill:${textSub}}.acc{fill:${accent}}
-  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  .fade{animation:fadeIn .6s ease-in-out}
 </style>
-<rect width="${W}" height="${totalH}" rx="8" fill="${bg}" stroke="${border}" stroke-width="1"/>
+<rect width="${W}" height="${totalH}" rx="10" fill="${bg}" stroke="${border}" stroke-width="1"/>
 `;
 
-  // ====================== HEADER ======================
-  svg += `<rect width="${W}" height="${headerH}" rx="8" fill="${bg2}"/>
-<rect x="0" y="${headerH - 8}" width="${W}" height="8" fill="${bg2}"/>
-<line x1="0" y1="${headerH}" x2="${W}" y2="${headerH}" stroke="${border}" stroke-width="1"/>
-`;
+  // ========== HEADER ==========
+  svg += `<rect width="${W}" height="${headerH}" rx="10" fill="${bg2}"/>`;
+  svg += `<rect x="0" y="${headerH - 10}" width="${W}" height="10" fill="${bg2}"/>`;
+  svg += `<line x1="0" y1="${headerH}" x2="${W}" y2="${headerH}" stroke="${border}" stroke-width="1"/>`;
 
   // Avatar
-  const avatarSize = 48;
+  const avatarSize = 56;
   const avatarX = PAD;
-  const avatarY = bio ? 16 : 12;
+  const avatarY = Math.round((headerH - avatarSize) / 2);
   if (avatarBase64) {
-    svg += `<defs><clipPath id="avatar-clip"><circle cx="${avatarX + avatarSize / 2}" cy="${avatarY + avatarSize / 2}" r="${avatarSize / 2}"/></clipPath></defs>
-<image href="${avatarBase64}" x="${avatarX}" y="${avatarY}" width="${avatarSize}" height="${avatarSize}" clip-path="url(#avatar-clip)" class="fade"/>
-<circle cx="${avatarX + avatarSize / 2}" cy="${avatarY + avatarSize / 2}" r="${avatarSize / 2}" stroke="${border}" stroke-width="1.5" fill="none"/>
-`;
+    svg += `<defs><clipPath id="ac"><circle cx="${avatarX + avatarSize / 2}" cy="${avatarY + avatarSize / 2}" r="${avatarSize / 2}"/></clipPath></defs>`;
+    svg += `<image href="${avatarBase64}" x="${avatarX}" y="${avatarY}" width="${avatarSize}" height="${avatarSize}" clip-path="url(#ac)"/>`;
+    svg += `<circle cx="${avatarX + avatarSize / 2}" cy="${avatarY + avatarSize / 2}" r="${avatarSize / 2}" stroke="${border}" stroke-width="1.5" fill="none"/>`;
   } else {
-    // Placeholder circle with initial
-    svg += `<circle cx="${avatarX + avatarSize / 2}" cy="${avatarY + avatarSize / 2}" r="${avatarSize / 2}" fill="${accentSoft}" stroke="${border}" stroke-width="1"/>
-<text x="${avatarX + avatarSize / 2}" y="${avatarY + avatarSize / 2 + 6}" class="t acc" font-size="18" font-weight="700" text-anchor="middle">${escapeXml(profile.login.charAt(0).toUpperCase())}</text>
-`;
+    svg += `<circle cx="${avatarX + avatarSize / 2}" cy="${avatarY + avatarSize / 2}" r="${avatarSize / 2}" fill="${accentSoft}" stroke="${border}" stroke-width="1"/>`;
+    svg += `<text x="${avatarX + avatarSize / 2}" y="${avatarY + avatarSize / 2 + 7}" class="t acc" font-size="22" font-weight="700" text-anchor="middle">${esc(profile.login.charAt(0).toUpperCase())}</text>`;
   }
 
-  // Name & subtitle
-  const textX = avatarX + avatarSize + 12;
-  svg += `<text x="${textX}" y="${avatarY + 18}" class="t main" font-size="16" font-weight="700">${displayName}</text>
-<text x="${textX}" y="${avatarY + 34}" class="t sub" font-size="11">@${escapeXml(ghUser)}${zennUser ? ` / Zenn: ${escapeXml(zennUser)}` : ""}</text>
-`;
+  const tx = avatarX + avatarSize + 16;
+  let ty = bio ? avatarY + 20 : avatarY + 24;
+  svg += `<text x="${tx}" y="${ty}" class="t main" font-size="18" font-weight="700">${displayName}</text>`;
+  ty += 18;
+  svg += `<text x="${tx}" y="${ty}" class="t sub" font-size="12">@${esc(ghUser)}${zennUser ? ` / Zenn: ${esc(zennUser)}` : ""}</text>`;
   if (bio) {
-    svg += `<text x="${textX}" y="${avatarY + 50}" class="t sub" font-size="10.5">${bio}</text>
-`;
+    ty += 18;
+    svg += `<text x="${tx}" y="${ty}" class="t sub" font-size="11.5">${bio}</text>`;
   }
 
   y = headerH;
 
-  // ====================== SUMMARY STATS BAR ======================
-  y += 8;
+  // ========== SUMMARY STATS ==========
+  y += 10;
   const contribTotal = contributions?.total ?? 0;
-  const summaryItems = [
-    { icon: ICON.commit, label: "Contribs", value: contribTotal > 0 ? contribTotal.toLocaleString() : commits.toLocaleString() },
+  const items = [
+    {
+      icon: ICON.contrib,
+      label: "Contribs",
+      value: contribTotal > 0 ? contribTotal.toLocaleString() : commits.toLocaleString(),
+    },
     { icon: ICON.pr, label: "PRs", value: prs.toLocaleString() },
     { icon: ICON.star, label: "Stars", value: stars.toLocaleString() },
-    { icon: ICON.repo, label: "Repos", value: profile.public_repos.toLocaleString() },
-    { icon: ICON.followers, label: "Followers", value: profile.followers.toLocaleString() },
+    {
+      icon: ICON.repo,
+      label: "Repos",
+      value: profile.public_repos.toLocaleString(),
+    },
+    {
+      icon: ICON.followers,
+      label: "Followers",
+      value: profile.followers.toLocaleString(),
+    },
   ];
 
-  const colW = INNER / summaryItems.length;
-  summaryItems.forEach((item, i) => {
+  const colW = INNER / items.length;
+  items.forEach((item, i) => {
     const cx = PAD + colW * i + colW / 2;
-    // Icon
-    svg += `<g transform="translate(${cx - 6}, ${y}) scale(1)"><g fill="${accent}" stroke="${accent}" stroke-width="0.3">${item.icon}</g></g>
-`;
-    // Value
-    svg += `<text x="${cx}" y="${y + 24}" class="t main" font-size="13" font-weight="700" text-anchor="middle">${item.value}</text>
-`;
-    // Label
-    svg += `<text x="${cx}" y="${y + 36}" class="t sub" font-size="9" text-anchor="middle">${item.label}</text>
-`;
+    svg += `<g transform="translate(${cx - 7}, ${y}) scale(1.15)"><g fill="${accent}" stroke="${accent}" stroke-width="0.3">${item.icon}</g></g>`;
+    svg += `<text x="${cx}" y="${y + 28}" class="t main" font-size="15" font-weight="700" text-anchor="middle">${item.value}</text>`;
+    svg += `<text x="${cx}" y="${y + 42}" class="t sub" font-size="10" text-anchor="middle">${item.label}</text>`;
   });
 
   y += summaryH;
+  svg += `<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="${border}" stroke-width="0.5" stroke-dasharray="4,3"/>`;
 
-  // Divider
-  svg += `<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="${border}" stroke-width="0.5" stroke-dasharray="3,3"/>
-`;
-
-  // ====================== CONTRIBUTION GRAPH ======================
+  // ========== CONTRIBUTION GRAPH ==========
   if (hasContrib) {
-    y += 12;
-    svg += `<text x="${PAD}" y="${y + 10}" class="t main" font-size="11" font-weight="600">${contributions!.total.toLocaleString()} contributions in the last year</text>
-`;
-    y += 20;
+    y += 14;
+    svg += `<text x="${PAD}" y="${y + 12}" class="t main" font-size="13" font-weight="600">${contributions!.total.toLocaleString()} contributions in the last year</text>`;
+    y += 24;
 
-    // Draw heatmap -- fit within INNER width
     const weeks = contributions!.weeks.slice(-52);
-    const maxCols = weeks.length;
+    const numCols = weeks.length;
     const gap = 2;
-    const cellSize = Math.min(8, Math.floor((INNER - (maxCols - 1) * gap) / maxCols));
+    const cellSize = Math.min(
+      9,
+      Math.floor((INNER - (numCols - 1) * gap) / numCols)
+    );
     const step = cellSize + gap;
-    const graphW = maxCols * step - gap;
+    const graphW = numCols * step - gap;
     const graphX = PAD + Math.floor((INNER - graphW) / 2);
 
     weeks.forEach((w, wi) => {
       w.days.forEach((d, di) => {
-        svg += `<rect x="${graphX + wi * step}" y="${y + di * step}" width="${cellSize}" height="${cellSize}" rx="1.5" fill="${contribColors[d.level]}"/>`;
+        svg += `<rect x="${graphX + wi * step}" y="${y + di * step}" width="${cellSize}" height="${cellSize}" rx="2" fill="${contribColors[d.level]}"/>`;
       });
     });
-    svg += "\n";
 
-    // Legend
-    const legendY = y + 7 * step + 6;
-    svg += `<text x="${W - PAD}" y="${legendY}" class="t sub" font-size="8" text-anchor="end">More</text>
-`;
-    const legendEndX = W - PAD - 26;
-    contribColors.slice().reverse().forEach((c, i) => {
-      svg += `<rect x="${legendEndX - i * 12}" y="${legendY - 8}" width="9" height="9" rx="1.5" fill="${c}"/>`;
-    });
-    svg += `\n<text x="${legendEndX - 5 * 12 - 2}" y="${legendY}" class="t sub" font-size="8" text-anchor="end">Less</text>
-`;
-    y = legendY + 10;
+    const legendY = y + 7 * step + 8;
+    svg += `<text x="${W - PAD}" y="${legendY}" class="t sub" font-size="9" text-anchor="end">More</text>`;
+    const lx = W - PAD - 30;
+    contribColors
+      .slice()
+      .reverse()
+      .forEach((c, i) => {
+        svg += `<rect x="${lx - i * 14}" y="${legendY - 9}" width="10" height="10" rx="2" fill="${c}"/>`;
+      });
+    svg += `<text x="${lx - 5 * 14 - 4}" y="${legendY}" class="t sub" font-size="9" text-anchor="end">Less</text>`;
 
-    // Divider
-    svg += `<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="${border}" stroke-width="0.5" stroke-dasharray="3,3"/>
-`;
+    y = legendY + 12;
+    svg += `<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="${border}" stroke-width="0.5" stroke-dasharray="4,3"/>`;
   }
 
-  // ====================== LANGUAGES + TOP REPOS (two columns) ======================
-  const sectionY = y + 12;
-  const halfW = INNER / 2 - 8;
+  // ========== LANGUAGES + REPOS (two columns) ==========
+  const secTop = y + 14;
+  const halfW = Math.floor(INNER / 2) - 12;
 
-  // Left column: Languages
-  if (langStats.length > 0) {
-    let ly = sectionY;
-    svg += `<text x="${PAD}" y="${ly + 10}" class="t acc" font-size="11" font-weight="600">Languages</text>
-`;
-    ly += 22;
+  // Left: Languages
+  if (hasLangs) {
+    let ly = secTop;
+    svg += `<text x="${PAD}" y="${ly + 12}" class="t acc" font-size="13" font-weight="600">Languages</text>`;
+    ly += 28;
 
-    const barW = halfW - 50;
+    const barW = halfW - 80;
     langStats.forEach((lang) => {
-      const color = LANG_COLORS[lang.name] || (dark ? "#8b949e" : "#6e7781");
-      // Bar background
-      svg += `<rect x="${PAD}" y="${ly - 1}" width="${barW}" height="8" rx="4" fill="${dark ? "#21262d" : "#eef1f5"}"/>`;
-      // Bar fill
-      const fillW = Math.max(4, (lang.percent / 100) * barW);
-      svg += `<rect x="${PAD}" y="${ly - 1}" width="${fillW}" height="8" rx="4" fill="${color}"/>`;
-      // Name + percent
-      svg += `<text x="${PAD + barW + 6}" y="${ly + 7}" class="t sub" font-size="10">${escapeXml(lang.name)}</text>`;
-      svg += `<text x="${PAD + halfW}" y="${ly + 7}" class="t main" font-size="9.5" font-weight="600" text-anchor="end">${lang.percent}%</text>
-`;
-      ly += 24;
+      const color =
+        LANG_COLORS[lang.name] || (dark ? "#8b949e" : "#6e7781");
+      svg += `<rect x="${PAD}" y="${ly}" width="${barW}" height="10" rx="5" fill="${dark ? "#21262d" : "#eef1f5"}"/>`;
+      const fillW = Math.max(6, (lang.percent / 100) * barW);
+      svg += `<rect x="${PAD}" y="${ly}" width="${fillW}" height="10" rx="5" fill="${color}"/>`;
+      svg += `<text x="${PAD + barW + 10}" y="${ly + 9}" class="t main" font-size="12">${esc(lang.name)}</text>`;
+      svg += `<text x="${PAD + halfW}" y="${ly + 9}" class="t sub" font-size="11" text-anchor="end">${lang.percent}%</text>`;
+      ly += langRowH;
     });
   }
 
-  // Right column: Top Repos
+  // Right: Repos
   if (hasRepos) {
-    let ry = sectionY;
-    const rightX = PAD + halfW + 16;
-    svg += `<text x="${rightX}" y="${ry + 10}" class="t acc" font-size="11" font-weight="600">Top Repositories</text>
-`;
-    ry += 22;
+    let ry = secTop;
+    const rx = PAD + halfW + 24;
+    svg += `<text x="${rx}" y="${ry + 12}" class="t acc" font-size="13" font-weight="600">Repositories</text>`;
+    ry += 28;
 
     topRepos.forEach((repo) => {
-      const langColor = repo.language
+      const lc = repo.language
         ? LANG_COLORS[repo.language] || textSub
         : "transparent";
-      // Language dot
-      svg += `<circle cx="${rightX + 4}" cy="${ry + 3}" r="3.5" fill="${langColor}"/>`;
-      // Repo name
-      svg += `<text x="${rightX + 12}" y="${ry + 7}" class="t main" font-size="10.5" font-weight="500">${escapeXml(truncate(repo.name, 22))}</text>`;
-      // Star icon + count
-      if (repo.stars > 0) {
-        svg += `<g transform="translate(${W - PAD - 30}, ${ry - 3}) scale(0.85)"><g fill="${dark ? "#e3b341" : "#d4a72c"}" stroke="none">${ICON.star}</g></g>`;
-        svg += `<text x="${W - PAD}" y="${ry + 7}" class="t sub" font-size="10" text-anchor="end">${repo.stars}</text>`;
-      }
-      svg += "\n";
-      ry += 22;
+      svg += `<circle cx="${rx + 5}" cy="${ry + 5}" r="4" fill="${lc}"/>`;
+      svg += `<text x="${rx + 14}" y="${ry + 9}" class="t main" font-size="12">${esc(trunc(repo.name, 28))}</text>`;
+      ry += repoRowH;
     });
   }
 
-  y = sectionY + langsAndReposH;
+  y = secTop + langsAndReposH;
 
-  // ====================== ZENN ======================
+  // ========== ZENN ==========
   if (hasZenn) {
-    svg += `<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="${border}" stroke-width="0.5" stroke-dasharray="3,3"/>
-`;
-    y += 12;
+    svg += `<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="${border}" stroke-width="0.5" stroke-dasharray="4,3"/>`;
+    y += 14;
 
-    // Zenn badge
-    const badgeW = 42;
-    svg += `<rect x="${PAD}" y="${y}" width="${badgeW}" height="18" rx="4" fill="${accentSoft}"/>
-<text x="${PAD + badgeW / 2}" y="${y + 13}" class="t acc" font-size="10" font-weight="700" text-anchor="middle">Zenn</text>
-`;
+    // Header row: Zenn badge + summary
+    const badgeW = 50;
+    svg += `<rect x="${PAD}" y="${y}" width="${badgeW}" height="22" rx="5" fill="${accentSoft}"/>`;
+    svg += `<text x="${PAD + badgeW / 2}" y="${y + 15}" class="t acc" font-size="12" font-weight="700" text-anchor="middle">Zenn</text>`;
+    svg += `<text x="${PAD + badgeW + 14}" y="${y + 15}" class="t sub" font-size="12">${zenn!.count} articles</text>`;
+    svg += `<text x="${PAD + badgeW + 100}" y="${y + 15}" class="t sub" font-size="12">/</text>`;
+    svg += `<g transform="translate(${PAD + badgeW + 114}, ${y + 5}) scale(1)"><g fill="${heartColor}" stroke="none">${ICON.heart}</g></g>`;
+    svg += `<text x="${PAD + badgeW + 130}" y="${y + 15}" class="t main" font-size="12" font-weight="600">${zenn!.totalLikes.toLocaleString()}</text>`;
+    y += zennSummaryH;
 
-    // Stats
-    svg += `<text x="${PAD + badgeW + 14}" y="${y + 13}" class="t sub" font-size="11">Articles</text>
-<text x="${PAD + badgeW + 68}" y="${y + 13}" class="t main" font-size="12" font-weight="700">${zenn!.count}</text>
-<text x="${PAD + badgeW + 100}" y="${y + 13}" class="t sub" font-size="11">Likes</text>
-<text x="${PAD + badgeW + 138}" y="${y + 13}" class="t main" font-size="12" font-weight="700">${zenn!.likes.toLocaleString()}</text>
-`;
-    y += 34;
+    // Article list
+    if (hasZennArticles) {
+      zenn!.articles.forEach((article) => {
+        // Emoji
+        svg += `<text x="${PAD + 4}" y="${y + 8}" font-size="14">${article.emoji}</text>`;
+        // Title
+        svg += `<text x="${PAD + 26}" y="${y + 8}" class="t main" font-size="12">${esc(trunc(article.title, 48))}</text>`;
+        // Heart + likes
+        svg += `<g transform="translate(${W - PAD - 38}, ${y - 2}) scale(0.9)"><g fill="${heartColor}" stroke="none">${ICON.heart}</g></g>`;
+        svg += `<text x="${W - PAD}" y="${y + 8}" class="t sub" font-size="11" text-anchor="end">${article.likes}</text>`;
+        y += zennArticleRowH;
+      });
+    }
   }
 
   svg += `</svg>`;
@@ -558,7 +589,7 @@ export async function GET(req: NextRequest) {
 
   if (!ghUser) {
     return new Response(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="40"><text x="10" y="25" font-size="14" fill="#cf222e">Error: gh parameter is required</text></svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="40"><text x="10" y="25" font-size="14" fill="#cf222e">Error: gh parameter is required</text></svg>`,
       {
         status: 400,
         headers: { "Content-Type": "image/svg+xml; charset=utf-8" },
@@ -570,7 +601,7 @@ export async function GET(req: NextRequest) {
     const ghData = await fetchGitHub(ghUser);
     if (!ghData) {
       return new Response(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="40"><text x="10" y="25" font-size="14" fill="#cf222e">User not found: ${escapeXml(ghUser)}</text></svg>`,
+        `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="40"><text x="10" y="25" font-size="14" fill="#cf222e">User not found: ${esc(ghUser)}</text></svg>`,
         {
           status: 404,
           headers: { "Content-Type": "image/svg+xml; charset=utf-8" },
@@ -603,7 +634,7 @@ export async function GET(req: NextRequest) {
     });
   } catch {
     return new Response(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="40"><text x="10" y="25" font-size="14" fill="#cf222e">Internal error</text></svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="40"><text x="10" y="25" font-size="14" fill="#cf222e">Internal error</text></svg>`,
       {
         status: 500,
         headers: { "Content-Type": "image/svg+xml; charset=utf-8" },
