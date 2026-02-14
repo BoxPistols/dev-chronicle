@@ -179,6 +179,76 @@ npm run test:watch    # 監視モード
 
 ---
 
+## Embed機能
+
+### 概要
+
+`/embed` ルートは、レポートを外部WebページにiframeやEmbedで埋め込むためのエンドポイントである。入力フォームやツールバーを持たず、クエリパラメータで指定されたユーザーのレポートを直接レンダリングする。
+
+### データフロー
+
+```
+外部サイト
+  |
+  |-- <iframe src="/embed?gh=user&zenn=user&dark=1">
+  |
+  v
+/embed (クライアントコンポーネント)
+  |
+  |-- useSearchParams() でパラメータ取得
+  |-- useEffect() でマウント時に自動フェッチ
+  |     |-- GET /api/github?username=...
+  |     |-- GET /api/zenn?username=...   (並列実行)
+  |
+  v
+Newspaper コンポーネント (既存をそのまま利用)
+```
+
+### パラメータ設計
+
+| パラメータ | 型 | デフォルト | 説明 |
+|-----------|-----|-----------|------|
+| `gh` | string | `""` | GitHubユーザー名 |
+| `zenn` | string | `""` | Zennユーザー名 |
+| `dark` | `"1"` | なし | ダークモード有効化 |
+
+`gh` と `zenn` の少なくとも一方が必要。両方空の場合はエラーメッセージを表示する。
+
+### iframe許可ヘッダー
+
+`next.config.ts` で `/embed` パスに対して以下のヘッダーを設定している。
+
+- `X-Frame-Options: ALLOWALL` -- iframe埋め込みを許可
+- `Content-Security-Policy: frame-ancestors *` -- 任意のオリジンからの埋め込みを許可
+
+これらのヘッダーは `/embed` パスのみに適用される。他のルート（`/` や `/api/*`）には影響しない。
+
+### 通常画面との差異
+
+| 項目 | 通常画面 (`/`) | Embed (`/embed`) |
+|------|---------------|------------------|
+| 入力フォーム | あり | なし（パラメータで指定） |
+| ツールバー | あり（テーマ切替・エクスポート） | なし |
+| AI所感 | あり（プロバイダ選択可） | なし |
+| ダークモード | ボタンで切替 | `?dark=1` で指定 |
+| レイアウト | 余白あり | 最小限の余白 |
+
+### コンポーネント構成
+
+```
+EmbedPage (Suspense boundary)
+  |
+  v
+EmbedContent (useSearchParams + data fetching)
+  |
+  v
+Newspaper (既存コンポーネント、props渡し)
+```
+
+`useSearchParams()` はSuspense boundaryを要求するため、`EmbedPage` でSuspenseラッパーを提供し、内部の `EmbedContent` で実際のパラメータ取得とデータフェッチを行う。
+
+---
+
 ## 今後の拡張方針
 
 以下は検討中の拡張案であり、現時点では未実装である。

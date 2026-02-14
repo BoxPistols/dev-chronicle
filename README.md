@@ -120,6 +120,9 @@ src/
       github/route.ts       GitHub APIラッパー
       zenn/route.ts          Zenn APIラッパー
       ai-comment/route.ts    AI所感生成エンドポイント
+    embed/
+      layout.tsx             Embed用レイアウト
+      page.tsx               Embed表示ページ（iframe埋め込み用）
     layout.tsx               ルートレイアウト・メタデータ
     page.tsx                 ホームページ
     globals.css              テーマ定義・グローバルスタイル
@@ -196,6 +199,51 @@ npm run dev
 2. AI所感が必要な場合は、チェックボックスを有効にしプロバイダとモデルを選択する
 3. 「新聞を生成する」を実行する
 4. 生成されたレポートは、テーマ切替・HTML保存・HTMLコピー・印刷の各機能で活用できる
+
+---
+
+## 埋め込み（Embed）
+
+Dev Chronicleのレポートを外部Webページにiframeで埋め込むことができる。`/embed` エンドポイントにクエリパラメータでユーザー名を渡すことで、入力フォームなしのレポートを直接表示する。
+
+### パラメータ
+
+| パラメータ | 必須 | 説明 |
+|-----------|------|------|
+| `gh` | どちらか一方 | GitHubユーザー名 |
+| `zenn` | どちらか一方 | Zennユーザー名 |
+| `dark` | 任意 | `1` を指定するとダークモードで表示 |
+
+`gh` と `zenn` は両方指定することも、片方だけでも動作する。
+
+### 埋め込み例
+
+```html
+<!-- GitHub + Zenn の両方 -->
+<iframe
+  src="https://your-domain.com/embed?gh=BoxPistols&zenn=aito"
+  width="100%" height="800" style="border: none;">
+</iframe>
+
+<!-- GitHubのみ、ダークモード -->
+<iframe
+  src="https://your-domain.com/embed?gh=BoxPistols&dark=1"
+  width="100%" height="800" style="border: none;">
+</iframe>
+
+<!-- Zennのみ -->
+<iframe
+  src="https://your-domain.com/embed?gh=&zenn=aito"
+  width="100%" height="800" style="border: none;">
+</iframe>
+```
+
+### 注意事項
+
+- AI編集者コラムはEmbed表示には含まれない（通常画面でのみ利用可能）
+- データは表示時にAPIから取得されるため、初回表示に数秒かかる場合がある
+- iframe内のレポートはレスポンシブ対応しているため、`width="100%"` を推奨
+- `height` は内容量に応じて調整が必要（800--1200px程度を推奨）
 
 ---
 

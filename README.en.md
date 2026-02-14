@@ -120,6 +120,9 @@ src/
       github/route.ts       GitHub API wrapper
       zenn/route.ts          Zenn API wrapper
       ai-comment/route.ts    AI commentary generation endpoint
+    embed/
+      layout.tsx             Embed layout
+      page.tsx               Embed display page (for iframe embedding)
     layout.tsx               Root layout and metadata
     page.tsx                 Home page
     globals.css              Theme definitions and global styles
@@ -196,6 +199,51 @@ Open `http://localhost:3000` in your browser.
 2. Optionally enable AI commentary and select a provider and model
 3. Click "Generate Newspaper"
 4. Use the toolbar to switch themes, save as HTML, copy HTML, or print
+
+---
+
+## Embedding
+
+Dev Chronicle reports can be embedded in external web pages via iframe. The `/embed` endpoint renders a report directly (without the input form) based on query parameters.
+
+### Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `gh` | Either one | GitHub username |
+| `zenn` | Either one | Zenn username |
+| `dark` | Optional | Set to `1` for dark mode |
+
+Both `gh` and `zenn` can be specified together, or either one alone.
+
+### Examples
+
+```html
+<!-- GitHub + Zenn -->
+<iframe
+  src="https://your-domain.com/embed?gh=BoxPistols&zenn=aito"
+  width="100%" height="800" style="border: none;">
+</iframe>
+
+<!-- GitHub only, dark mode -->
+<iframe
+  src="https://your-domain.com/embed?gh=BoxPistols&dark=1"
+  width="100%" height="800" style="border: none;">
+</iframe>
+
+<!-- Zenn only -->
+<iframe
+  src="https://your-domain.com/embed?gh=&zenn=aito"
+  width="100%" height="800" style="border: none;">
+</iframe>
+```
+
+### Notes
+
+- AI editorial commentary is not available in embed mode (use the main interface instead)
+- Data is fetched at display time, so the initial load may take a few seconds
+- The embedded report is responsive; `width="100%"` is recommended
+- Adjust `height` based on content volume (800--1200px recommended)
 
 ---
 
