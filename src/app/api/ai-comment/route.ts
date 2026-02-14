@@ -33,7 +33,7 @@ async function callOpenAI(
   return data.choices?.[0]?.message?.content || "";
 }
 
-async function callAnthropic(
+async function _callAnthropic(
   apiKey: string,
   model: string,
   summary: string
@@ -66,7 +66,7 @@ async function callAnthropic(
   return data.content?.map((b: { text?: string }) => b.text || "").join("") || "";
 }
 
-async function callGemini(
+async function _callGemini(
   apiKey: string,
   model: string,
   summary: string
@@ -102,50 +102,69 @@ async function callGemini(
   );
 }
 
+// -- Rate limiting (in-memory, 3 requests/day per IP) --
+
+const DAILY_LIMIT = 3;
+const rateLimitStore = new Map<string, number>();
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
+  const today = new Date().toISOString().slice(0, 10);
+  const key = `${ip}:${today}`;
+
+  // purge stale entries from previous days
+  for (const k of rateLimitStore.keys()) {
+    if (!k.endsWith(today)) rateLimitStore.delete(k);
+  }
+
+  const count = rateLimitStore.get(key) || 0;
+  if (count >= DAILY_LIMIT) {
+    return { allowed: false, remaining: 0 };
+  }
+  rateLimitStore.set(key, count + 1);
+  return { allowed: true, remaining: DAILY_LIMIT - count - 1 };
+}
+
+function getClientIp(req: NextRequest): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  return forwarded?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+}
+
+// -- POST handler (fixed to OpenAI gpt-4.1-nano) --
+
 export async function POST(req: NextRequest) {
   try {
-    const { summary, provider = "openai", model } = await req.json();
+    const ip = getClientIp(req);
+    const { allowed, remaining } = checkRateLimit(ip);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "AI所感の生成は1日3回までです。明日またお試しください。" },
+        {
+          status: 429,
+          headers: { "X-RateLimit-Remaining": "0" },
+        }
+      );
+    }
+
+    const { summary } = await req.json();
     if (!summary) {
       return NextResponse.json({ error: "summary is required" }, { status: 400 });
     }
 
-    let text = "";
-
-    if (provider === "openai") {
-      const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) {
-        return NextResponse.json(
-          { error: "OPENAI_API_KEY が設定されていません" },
-          { status: 500 }
-        );
-      }
-      text = await callOpenAI(apiKey, model || "gpt-4.1-nano", summary);
-    } else if (provider === "anthropic") {
-      const apiKey = process.env.ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        return NextResponse.json(
-          { error: "ANTHROPIC_API_KEY が設定されていません" },
-          { status: 500 }
-        );
-      }
-      text = await callAnthropic(apiKey, model || "claude-sonnet-4-20250514", summary);
-    } else if (provider === "gemini") {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        return NextResponse.json(
-          { error: "GEMINI_API_KEY が設定されていません" },
-          { status: 500 }
-        );
-      }
-      text = await callGemini(apiKey, model || "gemini-2.0-flash", summary);
-    } else {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
       return NextResponse.json(
-        { error: `未対応のプロバイダ: ${provider}` },
-        { status: 400 }
+        { error: "OPENAI_API_KEY が設定されていません" },
+        { status: 500 }
       );
     }
 
-    return NextResponse.json({ comment: text });
+    const text = await callOpenAI(apiKey, "gpt-4.1-nano", summary);
+
+    return NextResponse.json(
+      { comment: text },
+      { headers: { "X-RateLimit-Remaining": String(remaining) } }
+    );
   } catch (e) {
     const message = e instanceof Error ? e.message : "AI所感の生成に失敗しました";
     return NextResponse.json({ error: message }, { status: 502 });

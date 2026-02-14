@@ -5,29 +5,6 @@ import type { GitHubData, ZennData } from "@/types";
 import { isContentRepo, cleanBio } from "@/lib/utils";
 import Newspaper from "./Newspaper";
 
-type AIProvider = "openai" | "anthropic" | "gemini";
-
-interface AIModel {
-  id: string;
-  label: string;
-}
-
-const AI_MODELS: Record<AIProvider, AIModel[]> = {
-  openai: [
-    { id: "gpt-4.1-nano", label: "GPT-4.1 Nano (default)" },
-    { id: "gpt-4.1-mini", label: "GPT-4.1 Mini" },
-    { id: "o4-mini", label: "o4-mini" },
-  ],
-  anthropic: [
-    { id: "claude-sonnet-4-20250514", label: "Claude Sonnet 4" },
-    { id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
-  ],
-  gemini: [
-    { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash (default)" },
-    { id: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite" },
-  ],
-};
-
 // -- SVG Icons for toolbar --
 
 function IconBack() {
@@ -192,8 +169,6 @@ export default function InputForm() {
   const [zenn, setZenn] = useState<ZennData | null>(null);
   const [aiComment, setAiComment] = useState<string | null>(null);
   const [genAI, setGenAI] = useState(false);
-  const [aiProvider, setAiProvider] = useState<AIProvider>("openai");
-  const [aiModel, setAiModel] = useState("gpt-4.1-nano");
   const [dark, setDark] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const newspaperRef = useRef<HTMLDivElement>(null);
@@ -366,11 +341,7 @@ export default function InputForm() {
         const res = await fetch("/api/ai-comment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            summary: parts.join("\n"),
-            provider: aiProvider,
-            model: aiModel,
-          }),
+          body: JSON.stringify({ summary: parts.join("\n") }),
         });
         const data = await res.json();
         if (data.comment) setAiComment(data.comment);
@@ -540,63 +511,10 @@ export default function InputForm() {
               AI編集者の所感を生成する
             </span>
           </label>
-
           {genAI && (
-            <div className="mt-4 space-y-3 animate-[fadeInUp_0.2s_ease]">
-              <div>
-                <label className="text-xs font-semibold text-text-muted dark:text-text-dark-muted block mb-1.5">
-                  AIプロバイダ
-                </label>
-                <div className="flex gap-2">
-                  {(
-                    [
-                      { key: "openai", label: "OpenAI", color: "bg-green-600" },
-                      {
-                        key: "anthropic",
-                        label: "Anthropic",
-                        color: "bg-orange-600",
-                      },
-                      { key: "gemini", label: "Gemini", color: "bg-blue-600" },
-                    ] as const
-                  ).map(({ key, label, color }) => (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        setAiProvider(key);
-                        setAiModel(AI_MODELS[key][0].id);
-                      }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        aiProvider === key
-                          ? `${color} text-white shadow-sm`
-                          : "bg-neutral-100 dark:bg-neutral-800 text-text-muted dark:text-text-dark-muted hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label
-                  htmlFor="ai-model"
-                  className="text-xs font-semibold text-text-muted dark:text-text-dark-muted block mb-1.5"
-                >
-                  モデル
-                </label>
-                <select
-                  id="ai-model"
-                  value={aiModel}
-                  onChange={(e) => setAiModel(e.target.value)}
-                  className="w-full px-3 py-2 border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text dark:text-text-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors cursor-pointer"
-                >
-                  {AI_MODELS[aiProvider].map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+            <p className="mt-2 ml-7 text-xs text-text-muted dark:text-text-dark-muted animate-[fadeInUp_0.2s_ease]">
+              GPT-4.1 Nano -- 1日3回まで
+            </p>
           )}
         </div>
 
