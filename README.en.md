@@ -55,8 +55,9 @@ Supports light/dark theme switching, HTML file download, clipboard copy, and bro
 ```
 Browser (React)
   |
-  |-- InputForm.tsx    Input, state management, export logic
-  |-- Newspaper.tsx    Newspaper layout rendering
+  |-- /           InputForm.tsx   Input, state management, export logic
+  |-- /embed      EmbedPage.tsx   Parameter-driven auto display (for iframe)
+  |-- shared      Newspaper.tsx   Newspaper layout rendering
   |
   v
 Next.js API Routes (Server-side)
@@ -204,19 +205,27 @@ Open `http://localhost:3000` in your browser.
 
 ## Embedding
 
-Dev Chronicle reports can be embedded in external web pages via iframe. The `/embed` endpoint renders a report directly (without the input form) based on query parameters.
+Dev Chronicle reports can be embedded in external web pages. The `/embed` endpoint renders a report directly (without the input form) based on query parameters. Designed for use in portfolio sites, blogs, team dashboards, and internal tools.
+
+### URL Format
+
+```
+/embed?gh={GitHub username}&zenn={Zenn username}&dark={0|1}
+```
 
 ### Parameters
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `gh` | Either one | GitHub username |
-| `zenn` | Either one | Zenn username |
-| `dark` | Optional | Set to `1` for dark mode |
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `gh` | Either one | string | GitHub username |
+| `zenn` | Either one | string | Zenn username |
+| `dark` | Optional | `"1"` | Enable dark mode |
 
-Both `gh` and `zenn` can be specified together, or either one alone.
+Both `gh` and `zenn` can be specified together, or either one alone. If both are empty, an error message is displayed.
 
-### Examples
+### iframe Embedding
+
+The most common approach -- load the report inside an iframe on an external HTML page.
 
 ```html
 <!-- GitHub + Zenn -->
@@ -233,17 +242,57 @@ Both `gh` and `zenn` can be specified together, or either one alone.
 
 <!-- Zenn only -->
 <iframe
-  src="https://your-domain.com/embed?gh=&zenn=aito"
+  src="https://your-domain.com/embed?zenn=aito"
   width="100%" height="800" style="border: none;">
 </iframe>
 ```
 
+### Direct Link Usage
+
+The embed URL can also be opened directly in a browser, serving as a shortcut to a specific user's report.
+
+```
+https://your-domain.com/embed?gh=BoxPistols&zenn=aito
+```
+
+### Responsive iframe
+
+To auto-adjust iframe height on the embedding page, use a CSS aspect-ratio wrapper.
+
+```html
+<div style="position: relative; width: 100%; padding-top: 150%; overflow: hidden;">
+  <iframe
+    src="https://your-domain.com/embed?gh=BoxPistols"
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;">
+  </iframe>
+</div>
+```
+
+For fixed height, use values between `height="800"` and `height="1200"`. When displaying both GitHub and Zenn data, use a larger height.
+
+### Use Cases
+
+- **Portfolio site** -- Showcase development activity in newspaper format
+- **Personal blog** -- Embed an activity report in a sidebar or dedicated page
+- **Team dashboard** -- Display per-member activity reports in a grid
+- **Internal tools** -- Automate periodic activity sharing
+
+### Differences from Main Interface
+
+| Feature | Main (`/`) | Embed (`/embed`) |
+|---------|-----------|------------------|
+| Input form | Yes | No (set via parameters) |
+| Toolbar | Yes (theme, export) | No |
+| AI commentary | Yes (provider selectable) | Not available |
+| Dark mode | Button toggle | `?dark=1` parameter |
+| Layout | Standard padding | Minimal padding |
+
 ### Notes
 
-- AI editorial commentary is not available in embed mode (use the main interface instead)
+- AI editorial commentary is not available in embed mode. Use the main interface if AI commentary is needed
 - Data is fetched at display time, so the initial load may take a few seconds
-- The embedded report is responsive; `width="100%"` is recommended
-- Adjust `height` based on content volume (800--1200px recommended)
+- GitHub API rate limits (unauthenticated: 60 req/hr) may cause temporary failures under heavy traffic. Setting `GITHUB_TOKEN` is recommended
+- iframe permission headers (`X-Frame-Options`, `Content-Security-Policy: frame-ancestors`) are applied only to the `/embed` path
 
 ---
 

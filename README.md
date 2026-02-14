@@ -55,8 +55,9 @@ OpenAI / Anthropic Claude / Google Gemini の3プロバイダから選択し、�
 ```
 ブラウザ (React)
   |
-  |-- InputForm.tsx   入力・状態管理・エクスポート処理
-  |-- Newspaper.tsx   新聞レイアウトのレンダリング
+  |-- /           InputForm.tsx  入力・状態管理・エクスポート処理
+  |-- /embed      EmbedPage.tsx  パラメータ受取・自動表示（iframe用）
+  |-- 共通        Newspaper.tsx  新聞レイアウトのレンダリング
   |
   v
 Next.js API Routes (サーバーサイド)
@@ -204,22 +205,30 @@ npm run dev
 
 ## 埋め込み（Embed）
 
-Dev Chronicleのレポートを外部Webページにiframeで埋め込むことができる。`/embed` エンドポイントにクエリパラメータでユーザー名を渡すことで、入力フォームなしのレポートを直接表示する。
+Dev Chronicleのレポートを外部Webページに埋め込むことができる。`/embed` エンドポイントにクエリパラメータでユーザー名を渡すだけで、入力フォームなしのレポートが直接表示される。ポートフォリオサイト、ブログ、チームダッシュボードなどへの組み込みを想定している。
 
-### パラメータ
+### URL仕様
 
-| パラメータ | 必須 | 説明 |
-|-----------|------|------|
-| `gh` | どちらか一方 | GitHubユーザー名 |
-| `zenn` | どちらか一方 | Zennユーザー名 |
-| `dark` | 任意 | `1` を指定するとダークモードで表示 |
+```
+/embed?gh={GitHubユーザー名}&zenn={Zennユーザー名}&dark={0|1}
+```
 
-`gh` と `zenn` は両方指定することも、片方だけでも動作する。
+### パラメータ一覧
 
-### 埋め込み例
+| パラメータ | 必須 | 型 | 説明 |
+|-----------|------|-----|------|
+| `gh` | どちらか一方 | string | GitHubユーザー名 |
+| `zenn` | どちらか一方 | string | Zennユーザー名 |
+| `dark` | 任意 | `"1"` | ダークモードで表示する場合に指定 |
+
+`gh` と `zenn` は両方指定することも、片方だけでも動作する。両方とも空の場合はエラーメッセージが表示される。
+
+### iframeでの埋め込み
+
+外部のHTMLページからiframeで読み込む形式。もっとも一般的な利用方法。
 
 ```html
-<!-- GitHub + Zenn の両方 -->
+<!-- GitHub + Zenn の両方を表示 -->
 <iframe
   src="https://your-domain.com/embed?gh=BoxPistols&zenn=aito"
   width="100%" height="800" style="border: none;">
@@ -233,17 +242,57 @@ Dev Chronicleのレポートを外部Webページにiframeで埋め込むこと�
 
 <!-- Zennのみ -->
 <iframe
-  src="https://your-domain.com/embed?gh=&zenn=aito"
+  src="https://your-domain.com/embed?zenn=aito"
   width="100%" height="800" style="border: none;">
 </iframe>
 ```
 
+### 直接リンクとしての利用
+
+iframeを使わず、URLを直接ブラウザで開くこともできる。特定ユーザーのレポートへのショートカットとして活用可能。
+
+```
+https://your-domain.com/embed?gh=BoxPistols&zenn=aito
+```
+
+### レスポンシブ対応のiframe
+
+埋め込み先のページでiframeの高さを自動調整したい場合は、以下のようにCSSで対応できる。
+
+```html
+<div style="position: relative; width: 100%; padding-top: 150%; overflow: hidden;">
+  <iframe
+    src="https://your-domain.com/embed?gh=BoxPistols"
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;">
+  </iframe>
+</div>
+```
+
+固定高さで十分な場合は `height="800"` から `height="1200"` の範囲で調整する。GitHubとZennの両方を表示する場合は高さを大きめに取ることを推奨。
+
+### 活用シーン
+
+- **ポートフォリオサイト** -- 自分の開発活動を新聞形式で紹介
+- **個人ブログ** -- サイドバーや専用ページに活動レポートを埋め込み
+- **チームダッシュボード** -- メンバーごとの活動レポートを一覧表示
+- **社内ツール** -- 定期的な活動共有の自動化
+
+### 通常画面との違い
+
+| 項目 | 通常画面 (`/`) | Embed (`/embed`) |
+|------|---------------|------------------|
+| 入力フォーム | あり | なし（パラメータで指定） |
+| ツールバー | あり（テーマ切替・エクスポート） | なし |
+| AI所感 | あり（プロバイダ選択可） | 非対応 |
+| ダークモード | ボタンで切替 | `?dark=1` で指定 |
+| レイアウト | 余白あり | 最小限の余白 |
+
 ### 注意事項
 
-- AI編集者コラムはEmbed表示には含まれない（通常画面でのみ利用可能）
-- データは表示時にAPIから取得されるため、初回表示に数秒かかる場合がある
-- iframe内のレポートはレスポンシブ対応しているため、`width="100%"` を推奨
-- `height` は内容量に応じて調整が必要（800--1200px程度を推奨）
+- AI編集者コラムはEmbed表示には含まれない。AI所感が必要な場合は通常画面を利用する
+- データは表示時にAPIから取得するため、初回表示に数秒かかる場合がある
+- GitHub APIのレートリミット（未認証: 60回/時）により、アクセスが集中すると一時的にデータ取得に失敗する可能性がある。`GITHUB_TOKEN` の設定を推奨
+- iframe許可ヘッダー（`X-Frame-Options`, `Content-Security-Policy: frame-ancestors`）は `/embed` パスにのみ適用される
 
 ---
 
