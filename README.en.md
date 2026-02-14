@@ -64,6 +64,7 @@ Next.js API Routes (Server-side)
   |-- /api/github       GitHub REST API proxy
   |-- /api/zenn         Zenn API proxy
   |-- /api/ai-comment   AI commentary generation (multi-provider)
+  |-- /api/card         SVG card generation (for GitHub README)
   |
   v
 External APIs
@@ -100,11 +101,12 @@ The application is built around two core components.
 
 ### API Route Design
 
-All three API routes are implemented as Next.js Route Handlers (App Router).
+All four API routes are implemented as Next.js Route Handlers (App Router).
 
 - `/api/github` -- Executes three requests to GitHub API in parallel via `Promise.all` (profile, events, repositories). If `GITHUB_TOKEN` is set, it attaches a Bearer token to increase rate limits.
 - `/api/zenn` -- Fetches the latest articles from Zenn API, accepting a username as a query parameter.
 - `/api/ai-comment` -- Dispatches to OpenAI, Anthropic, or Gemini based on the `provider` parameter. The system prompt assigns the role of "weekly tech newspaper AI editor" and includes instructions to distinguish content repositories from product development and to avoid speculation about external profile links.
+- `/api/card` -- Generates an SVG image summarizing GitHub/Zenn activity. Fetches data from external APIs server-side and assembles an SVG string. Designed for image embedding in GitHub profile READMEs.
 
 ### Theme System
 
@@ -121,6 +123,7 @@ src/
       github/route.ts       GitHub API wrapper
       zenn/route.ts          Zenn API wrapper
       ai-comment/route.ts    AI commentary generation endpoint
+      card/route.ts          SVG card generation (for GitHub README)
     embed/
       layout.tsx             Embed layout
       page.tsx               Embed display page (for iframe embedding)
@@ -293,6 +296,66 @@ For fixed height, use values between `height="800"` and `height="1200"`. When di
 - Data is fetched at display time, so the initial load may take a few seconds
 - GitHub API rate limits (unauthenticated: 60 req/hr) may cause temporary failures under heavy traffic. Setting `GITHUB_TOKEN` is recommended
 - iframe permission headers (`X-Frame-Options`, `Content-Security-Policy: frame-ancestors`) are applied only to the `/embed` path
+
+---
+
+## SVG Card (for GitHub Profile README)
+
+The `/api/card` endpoint generates an SVG card image that can be embedded in a GitHub profile README. Since GitHub does not support iframes, this provides a way to display an activity summary as an image.
+
+### URL Format
+
+```
+/api/card?gh={GitHub username}&zenn={Zenn username}&dark={0|1}
+```
+
+### Parameters
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `gh` | Required | string | GitHub username |
+| `zenn` | Optional | string | Zenn username (adds Zenn stats to the card) |
+| `dark` | Optional | `"1"` | Generate card in dark mode |
+
+### Usage in GitHub Profile README
+
+Add the following Markdown to your profile repository (`username/username`) README:
+
+```markdown
+![Dev Chronicle](https://your-domain.com/api/card?gh=BoxPistols&zenn=aito)
+```
+
+Dark mode:
+
+```markdown
+![Dev Chronicle](https://your-domain.com/api/card?gh=BoxPistols&zenn=aito&dark=1)
+```
+
+### Card Contents
+
+- Username and display name
+- Contribution count and heatmap (last 26 weeks)
+- GitHub stats (commits, PRs, stars, public repos, followers)
+- Top 5 languages
+- Zenn stats (article count, likes) -- when `zenn` parameter is specified
+
+### Technical Details
+
+- Response format: SVG (`image/svg+xml`)
+- Width: 420px, height: dynamic based on content
+- 5-minute CDN cache (`Cache-Control: public, max-age=300`)
+- Contribution data is only shown when `GITHUB_TOKEN` is configured
+- Errors are returned as SVG images to prevent broken displays
+
+### Embed vs SVG Card
+
+| | SVG Card (`/api/card`) | Embed (`/embed`) |
+|--|------------------------|------------------|
+| Use case | GitHub README, Markdown | Web pages, iframes |
+| Format | SVG image | HTML (interactive) |
+| Detail level | Summary (stats-focused) | Full report (newspaper) |
+| AI commentary | No | No (use main interface) |
+| Links | No (image) | Yes (clickable) |
 
 ---
 

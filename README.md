@@ -64,6 +64,7 @@ Next.js API Routes (サーバーサイド)
   |-- /api/github       GitHub REST API のプロキシ
   |-- /api/zenn         Zenn API のプロキシ
   |-- /api/ai-comment   AI所感生成（マルチプロバイダ）
+  |-- /api/card         SVGカード生成（GitHub README用）
   |
   v
 外部API
@@ -100,11 +101,12 @@ Next.js API Routes (サーバーサイド)
 
 ### APIルート設計
 
-3つのAPIルートはすべてNext.jsのRoute Handlers (App Router) で実装されている。
+4つのAPIルートはすべてNext.jsのRoute Handlers (App Router) で実装されている。
 
 - `/api/github` -- GitHub APIに対してプロフィール・イベント・リポジトリの3リクエストを `Promise.all` で並列実行。`GITHUB_TOKEN` が設定されていればBearerトークンをヘッダーに付与してレートリミットを緩和する。
 - `/api/zenn` -- Zenn APIから最新記事を取得。パラメータとしてユーザー名を受け取る。
 - `/api/ai-comment` -- `provider` パラメータに応じてOpenAI / Anthropic / Gemini のいずれかを呼び分ける。システムプロンプトには「週刊技術新聞のAI編集者」としてのロール指定と、コンテンツ系リポジトリの区別やURL先の推測禁止といった注意事項が含まれている。
+- `/api/card` -- GitHub/Zennの活動サマリーをSVG画像として生成。サーバーサイドで外部APIからデータを取得し、SVG文字列を組み立てて返却する。GitHub プロフィール README での画像埋め込みを想定している。
 
 ### テーマシステム
 
@@ -121,6 +123,7 @@ src/
       github/route.ts       GitHub APIラッパー
       zenn/route.ts          Zenn APIラッパー
       ai-comment/route.ts    AI所感生成エンドポイント
+      card/route.ts          SVGカード生成（GitHub README用）
     embed/
       layout.tsx             Embed用レイアウト
       page.tsx               Embed表示ページ（iframe埋め込み用）
@@ -293,6 +296,66 @@ https://your-domain.com/embed?gh=BoxPistols&zenn=aito
 - データは表示時にAPIから取得するため、初回表示に数秒かかる場合がある
 - GitHub APIのレートリミット（未認証: 60回/時）により、アクセスが集中すると一時的にデータ取得に失敗する可能性がある。`GITHUB_TOKEN` の設定を推奨
 - iframe許可ヘッダー（`X-Frame-Options`, `Content-Security-Policy: frame-ancestors`）は `/embed` パスにのみ適用される
+
+---
+
+## SVGカード（GitHub プロフィール README用）
+
+GitHubプロフィールのREADMEに貼り付けられるSVGカード画像を生成する `/api/card` エンドポイントを提供している。GitHubはiframeをサポートしないため、画像として活動サマリーを表示する仕組みである。
+
+### URL仕様
+
+```
+/api/card?gh={GitHubユーザー名}&zenn={Zennユーザー名}&dark={0|1}
+```
+
+### パラメータ
+
+| パラメータ | 必須 | 型 | 説明 |
+|-----------|------|-----|------|
+| `gh` | 必須 | string | GitHubユーザー名 |
+| `zenn` | 任意 | string | Zennユーザー名（指定するとZenn統計が追加表示される） |
+| `dark` | 任意 | `"1"` | ダークモードでカードを生成 |
+
+### GitHub プロフィール README での使い方
+
+プロフィールリポジトリ（`username/username`）の `README.md` に以下のMarkdownを記述する。
+
+```markdown
+![Dev Chronicle](https://your-domain.com/api/card?gh=BoxPistols&zenn=aito)
+```
+
+ダークモード:
+
+```markdown
+![Dev Chronicle](https://your-domain.com/api/card?gh=BoxPistols&zenn=aito&dark=1)
+```
+
+### カードの内容
+
+- ユーザー名とプロフィール名
+- コントリビューション数とヒートマップ（直近26週間）
+- GitHub統計（コミット、PR、スター、公開リポ、フォロワー）
+- 使用言語トップ5
+- Zenn統計（記事数、いいね数）-- `zenn` パラメータ指定時
+
+### 技術仕様
+
+- レスポンスは SVG (`image/svg+xml`) 形式
+- 幅420px、高さはコンテンツに応じて動的
+- 5分間のCDNキャッシュ（`Cache-Control: public, max-age=300`）
+- コントリビューションデータは `GITHUB_TOKEN` が設定されている場合のみ表示
+- エラー時もSVG画像でメッセージを返却するため、表示が壊れることはない
+
+### Embed との使い分け
+
+| | SVGカード (`/api/card`) | Embed (`/embed`) |
+|--|------------------------|------------------|
+| 用途 | GitHub README、Markdown | Webページ、iframe |
+| 形式 | SVG画像 | HTML（インタラクティブ） |
+| 情報量 | サマリー（統計中心） | フルレポート（新聞形式） |
+| AI所感 | なし | なし（通常画面で対応） |
+| リンク | なし（画像のため） | あり（クリック可能） |
 
 ---
 

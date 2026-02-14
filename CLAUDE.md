@@ -21,7 +21,7 @@ Next.js 16 + TypeScript + Tailwind CSS 4 で構築した、GitHub/Zennの活動�
 
 - `src/app/` -- App Routerのページ/レイアウト
 - `src/app/embed/` -- iframe埋め込み用エンドポイント（`/embed?gh=user&zenn=user&dark=1`）
-- `src/app/api/` -- APIルート（GitHub / Zenn / AI所感）
+- `src/app/api/` -- APIルート（GitHub / Zenn / AI所感 / SVGカード）
 - `src/components/` -- UIコンポーネント（InputForm, Newspaper）
 - `src/lib/` -- ユーティリティ関数
 - `src/types/` -- TypeScript型定義
@@ -38,6 +38,7 @@ Next.js 16 + TypeScript + Tailwind CSS 4 で構築した、GitHub/Zennの活動�
 - AI所感のシステムプロンプトにはコンテンツ系リポの区別指示とURL推測禁止が含まれる
 - `/embed` は `next.config.ts` で `X-Frame-Options: ALLOWALL` と `frame-ancestors *` を設定。他ルートには影響しない
 - Embed では `useSearchParams()` を使うため Suspense boundary が必要
+- `/api/card` はSVG画像を返すRoute Handler。GitHub README用。エラーもSVG形式で返却
 
 ## テスト方針
 

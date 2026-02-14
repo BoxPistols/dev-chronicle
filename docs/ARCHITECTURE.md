@@ -73,6 +73,15 @@ interface NewspaperProps {
 - `https://zenn.dev/api/articles` にリクエストし、最新20件を取得
 - 同じく300秒のキャッシュを適用
 
+### /api/card
+
+- `GET` メソッド、クエリパラメータに `gh`（必須）, `zenn`（任意）, `dark`（任意）を取る
+- サーバーサイドでGitHub REST API + GraphQL API、Zenn APIからデータを直接取得
+- `generateSvg()` でSVG文字列を組み立て、`image/svg+xml` として返却
+- 高さはコンテンツに応じて動的計算（コントリビューショングラフ有無、Zenn有無で変動）
+- エラーレスポンスもSVG形式で返却し、画像として壊れないようにする
+- `Cache-Control: public, max-age=300` で5分キャッシュ
+
 ### /api/ai-comment
 
 - `POST` メソッド、ボディに `summary`, `provider`, `model` を受け取る
@@ -246,6 +255,78 @@ Newspaper (既存コンポーネント、props渡し)
 ```
 
 `useSearchParams()` はSuspense boundaryを要求するため、`EmbedPage` でSuspenseラッパーを提供し、内部の `EmbedContent` で実際のパラメータ取得とデータフェッチを行う。
+
+---
+
+## SVGカード API (`/api/card`)
+
+### 概要
+
+GitHub プロフィール README に画像として埋め込めるSVGカードを生成するエンドポイント。GitHubがiframeやスクリプトを許可しないため、`![](url)` 形式の画像埋め込みで活動サマリーを表示する。
+
+### データフロー
+
+```
+GitHub Profile README
+  |
+  |-- ![](https://your-domain.com/api/card?gh=user&zenn=user)
+  |
+  v
+/api/card (Route Handler, サーバーサイド)
+  |
+  |-- fetchGitHub(username)
+  |     |-- GET /users/{user}           (プロフィール)
+  |     |-- GET /users/{user}/events    (イベント)
+  |     |-- GET /users/{user}/repos     (リポジトリ)
+  |     |-- POST /graphql              (コントリビューション, token必須)
+  |
+  |-- fetchZenn(username)              (zennパラメータ指定時)
+  |     |-- GET zenn.dev/api/articles
+  |
+  v
+generateSvg() -- SVG文字列を組み立て
+  |
+  v
+Response (image/svg+xml, Cache-Control: 300s)
+```
+
+### SVG構成
+
+SVGは以下のセクションで構成され、高さはコンテンツに応じて動的に計算される。
+
+1. **ヘッダー** -- 表示名、`@ユーザー名`、Zennユーザー名（指定時）
+2. **コントリビューショングラフ** -- 直近26週間のヒートマップ。5段階の色分け。Less/Moreの凡例付き
+3. **GitHub Stats** -- Commits (recent), Pull Requests, Stars, Public Repos, Followers
+4. **Top Languages** -- リポジトリ使用言語の上位5件
+5. **Zenn** -- 記事数、いいね数（zennパラメータ指定時）
+
+### テーマ
+
+`dark=1` パラメータでダークテーマを適用。カラーパレットはEmbed/通常画面のものとは独立しており、SVG内で完結している。
+
+| 要素 | ライト | ダーク |
+|------|--------|--------|
+| 背景 | `#ffffff` | `#0d1117` |
+| ボーダー | `#d0d7de` | `#30363d` |
+| テキスト | `#1f2328` | `#c9d1d9` |
+| サブテキスト | `#656d76` | `#8b949e` |
+| アクセント | `#0969da` | `#58a6ff` |
+
+コントリビューションの色はGitHub公式に準拠:
+- ライト: `#ebedf0` → `#9be9a8` → `#40c463` → `#30a14e` → `#216e39`
+- ダーク: `#161b22` → `#0e4429` → `#006d32` → `#26a641` → `#39d353`
+
+### エラーハンドリング
+
+すべてのエラーレスポンスをSVG形式で返却し、画像として表示が壊れないようにしている。
+
+- `gh` パラメータ未指定 → 400 + エラーSVG
+- ユーザー未発見 → 404 + エラーSVG
+- サーバーエラー → 500 + エラーSVG
+
+### Embed (`/embed`) との設計上の違い
+
+`/embed` はクライアントサイドでReactコンポーネント (Newspaper) をレンダリングするHTMLページだが、`/api/card` はサーバーサイドでSVG文字列を生成して返却する。これは、GitHub READMEが `<img>` タグの画像のみを許可するという制約に対応するためである。
 
 ---
 
