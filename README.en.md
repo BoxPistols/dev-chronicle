@@ -210,6 +210,89 @@ Open `http://localhost:3000` in your browser.
 
 ---
 
+## Deployment & Operation
+
+### Deploying to Vercel
+
+Import the GitHub repository into Vercel for automatic deployment.
+
+1. Log in to [vercel.com](https://vercel.com) with your GitHub account
+2. Click "Add New Project" and import this repository
+3. Framework Preset will auto-detect `Next.js`
+4. Click "Deploy"
+
+After initial setup, every `git push` to the `main` branch triggers an automatic build and deploy on Vercel.
+
+### Environment Variables on Vercel
+
+To enable AI commentary or increase GitHub API rate limits, configure environment variables in the Vercel dashboard.
+
+Navigate to **Settings > Environment Variables** and add:
+
+| Variable             | Purpose                        | Required    |
+| -------------------- | ------------------------------ | ----------- |
+| `OPENAI_API_KEY`     | OpenAI (AI commentary)         | Optional    |
+| `ANTHROPIC_API_KEY`  | Anthropic Claude (AI commentary)| Optional   |
+| `GEMINI_API_KEY`     | Google Gemini (AI commentary)  | Optional    |
+| `GITHUB_TOKEN`       | GitHub API rate limit increase | Recommended |
+
+AI keys are only needed if you use the AI commentary feature. `GITHUB_TOKEN` is optional but increases rate limits from 60 req/hr to 5,000 req/hr.
+
+### How It Operates
+
+| Aspect     | Details                                                      |
+| ---------- | ------------------------------------------------------------ |
+| Deployment | Auto-deploy on `git push` (Vercel)                           |
+| Database   | None required (stateless; data fetched in real time via APIs) |
+| Caching    | API responses include a 300-second cache header              |
+| Cost       | Runs within Vercel's free tier (Hobby)                       |
+| Monitoring | Deploy history and logs available in Vercel dashboard        |
+
+### Using from a Rental Server (Static HTML)
+
+With Dev Chronicle deployed on Vercel, you can embed it in any static HTML page on a rental server. No Node.js or Next.js installation is needed on the hosting side.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Development Activity Report</title>
+</head>
+<body>
+  <h1>Development Activity Report</h1>
+
+  <!-- iframe embedding (live data) -->
+  <iframe
+    src="https://your-vercel-domain.vercel.app/embed?gh=BoxPistols&zenn=aito"
+    width="100%"
+    height="800"
+    style="border: none; border-radius: 12px;"
+  ></iframe>
+
+  <!-- Or embed as an SVG card image -->
+  <img
+    src="https://your-vercel-domain.vercel.app/api/card?gh=BoxPistols&zenn=aito"
+    alt="Dev Chronicle"
+    width="600"
+  />
+</body>
+</html>
+```
+
+Replace `your-vercel-domain` with the domain shown in the "Domains" section of your Vercel dashboard.
+
+### Embedding Method Comparison
+
+| Method                 | Requirements          | Hosting Requirements | Data Updates |
+| ---------------------- | --------------------- | -------------------- | ------------ |
+| iframe embedding       | Vercel deployment     | HTML hosting only    | Real-time    |
+| SVG card image         | Vercel deployment     | HTML hosting only    | Real-time    |
+| Static HTML file upload | Export via "Save HTML"| HTML hosting only    | Fixed at save time |
+
+---
+
 ## Embedding
 
 Dev Chronicle reports can be embedded in external web pages. The `/embed` endpoint renders a report directly (without the input form) based on query parameters. Designed for use in portfolio sites, blogs, team dashboards, and internal tools.

@@ -210,6 +210,89 @@ npm run dev
 
 ---
 
+## デプロイと運用
+
+### Vercelへのデプロイ
+
+GitHubリポジトリをVercelにインポートするだけで、自動デプロイが有効になる。
+
+1. [vercel.com](https://vercel.com) にGitHubアカウントでログイン
+2. 「Add New Project」からこのリポジトリをインポート
+3. Framework Preset は `Next.js` が自動検出される
+4. 「Deploy」を実行
+
+以降、`main` ブランチへの `git push` のたびにVercelが自動的にビルド・デプロイを行う。
+
+### Vercelでの環境変数設定
+
+AI所感機能やGitHubレートリミット緩和を利用する場合、Vercelダッシュボードで環境変数を設定する。
+
+**Settings > Environment Variables** に以下を追加:
+
+| 変数名              | 用途                      | 必須 |
+| ------------------- | ------------------------- | ---- |
+| `OPENAI_API_KEY`    | OpenAI（AI所感）          | 任意 |
+| `ANTHROPIC_API_KEY` | Anthropic Claude（AI所感）| 任意 |
+| `GEMINI_API_KEY`    | Google Gemini（AI所感）   | 任意 |
+| `GITHUB_TOKEN`      | GitHub APIレートリミット緩和 | 推奨 |
+
+AI所感を使わない場合はAIキーの設定は不要。`GITHUB_TOKEN` は未設定でも動作するが、設定するとレートリミットが60回/時から5,000回/時に緩和される。
+
+### 運用の仕組み
+
+| 項目       | 内容                                                  |
+| ---------- | ----------------------------------------------------- |
+| デプロイ   | `git push` で自動デプロイ（Vercel）                   |
+| データ保存 | なし（DBレス。APIリクエスト時にリアルタイム取得）      |
+| キャッシュ | APIレスポンスに300秒のキャッシュヘッダーを付与         |
+| 費用       | Vercel無料枠（Hobby）で運用可能                       |
+| 監視       | Vercelダッシュボードでデプロイ履歴・ログを確認        |
+
+### レンタルサーバーのHTMLから利用する
+
+Dev ChronicleをVercelにデプロイしておけば、レンタルサーバー側にはHTMLファイルを配置するだけで利用できる。Node.jsやNext.jsのインストールは不要。
+
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>開発活動レポート</title>
+</head>
+<body>
+  <h1>開発活動レポート</h1>
+
+  <!-- iframe埋め込み（リアルタイムデータ） -->
+  <iframe
+    src="https://your-vercel-domain.vercel.app/embed?gh=BoxPistols&zenn=aito"
+    width="100%"
+    height="800"
+    style="border: none; border-radius: 12px;"
+  ></iframe>
+
+  <!-- または、SVGカード画像として埋め込み -->
+  <img
+    src="https://your-vercel-domain.vercel.app/api/card?gh=BoxPistols&zenn=aito"
+    alt="Dev Chronicle"
+    width="600"
+  />
+</body>
+</html>
+```
+
+`your-vercel-domain` はVercelダッシュボードの「Domains」欄に表示されているドメインに置き換える。
+
+### 利用方法の比較
+
+| 方法               | 必要なもの                | レンタルサーバー側の要件 | データ更新 |
+| ------------------ | ------------------------- | ------------------------ | ---------- |
+| iframe埋め込み     | Vercelデプロイ済み        | HTMLが置ければOK         | リアルタイム |
+| SVGカード画像      | Vercelデプロイ済み        | HTMLが置ければOK         | リアルタイム |
+| HTMLファイル直接配置 | アプリで「HTML保存」実行 | HTMLが置ければOK         | 保存時点で固定 |
+
+---
+
 ## 埋め込み（Embed）
 
 Dev Chronicleのレポートを外部Webページに埋め込むことができる。`/embed` エンドポイントにクエリパラメータでユーザー名を渡すだけで、入力フォームなしのレポートが直接表示される。ポートフォリオサイト、ブログ、チームダッシュボードなどへの組み込みを想定している。
