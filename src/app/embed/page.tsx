@@ -93,9 +93,7 @@ function EmbedContent() {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          <p className="mt-3 text-sm text-text-muted">
-            レポートを生成中...
-          </p>
+          <p className="mt-3 text-sm text-text-muted">レポートを生成中...</p>
         </div>
       </div>
     );
@@ -109,7 +107,9 @@ function EmbedContent() {
             Dev Chronicle - Embed
           </h1>
           {errors.map((e, i) => (
-            <p key={i} className="text-error text-sm mb-2">{e}</p>
+            <p key={i} className="text-error text-sm mb-2">
+              {e}
+            </p>
           ))}
           <p className="text-text-muted text-xs mt-4">
             使い方: /embed?gh=GitHubユーザー名&amp;zenn=Zennユーザー名
@@ -129,9 +129,7 @@ function EmbedContent() {
             {e}
           </p>
         ))}
-        <div
-          className="bg-surface dark:bg-surface-dark-alt text-text dark:text-text-dark max-w-[1200px] mx-auto p-6 md:p-10 shadow-lg rounded-xl dark-transition"
-        >
+        <div className="bg-surface dark:bg-surface-dark-alt text-text dark:text-text-dark max-w-[1200px] mx-auto p-6 md:p-10 shadow-lg rounded-xl dark-transition">
           <Newspaper
             gh={gh}
             zenn={zenn}

@@ -32,7 +32,15 @@ const AI_MODELS: Record<AIProvider, AIModel[]> = {
 
 function IconBack() {
   return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className="w-4 h-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <polyline points="15 18 9 12 15 6" />
     </svg>
   );
@@ -40,19 +48,39 @@ function IconBack() {
 
 function IconSun() {
   return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className="w-4 h-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="12" cy="12" r="5" />
-      <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-      <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
     </svg>
   );
 }
 
 function IconMoon() {
   return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className="w-4 h-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
     </svg>
   );
@@ -60,7 +88,15 @@ function IconMoon() {
 
 function IconPrint() {
   return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className="w-4 h-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <polyline points="6 9 6 2 18 2 18 9" />
       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
       <rect x="6" y="14" width="12" height="8" />
@@ -70,7 +106,15 @@ function IconPrint() {
 
 function IconDownload() {
   return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className="w-4 h-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
@@ -80,7 +124,15 @@ function IconDownload() {
 
 function IconCopy() {
   return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className="w-4 h-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </svg>
@@ -90,8 +142,19 @@ function IconCopy() {
 function IconSpinner() {
   return (
     <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      />
     </svg>
   );
 }
@@ -107,7 +170,8 @@ function ToolBtn({
   children: React.ReactNode;
   variant?: "default" | "accent";
 }) {
-  const base = "flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer";
+  const base =
+    "flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer";
   const styles =
     variant === "accent"
       ? `${base} border border-accent/30 dark:border-accent/40 text-accent dark:text-blue-400 hover:bg-accent/5 dark:hover:bg-accent/10`
@@ -166,7 +230,16 @@ export default function InputForm() {
       URL.revokeObjectURL(url);
       showToast("HTMLファイルをダウンロードしました");
     } catch {
-      handleCopy();
+      // fallback: copy to clipboard
+      try {
+        const html = buildHTML();
+        navigator.clipboard.writeText(html).then(
+          () => showToast("HTMLをクリップボードにコピーしました"),
+          () => showToast("ダウンロードに失敗しました", false)
+        );
+      } catch {
+        showToast("ダウンロードに失敗しました", false);
+      }
     }
   }, [buildHTML, showToast]);
 
@@ -206,9 +279,7 @@ export default function InputForm() {
     // GitHub
     if (ghu) {
       try {
-        const res = await fetch(
-          `/api/github?username=${encodeURIComponent(ghu)}`
-        );
+        const res = await fetch(`/api/github?username=${encodeURIComponent(ghu)}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "取得失敗");
         ghData = data;
@@ -221,9 +292,7 @@ export default function InputForm() {
     // Zenn
     if (zu) {
       try {
-        const res = await fetch(
-          `/api/zenn?username=${encodeURIComponent(zu)}`
-        );
+        const res = await fetch(`/api/zenn?username=${encodeURIComponent(zu)}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "取得失敗");
         if (data.articles?.length === 0) {
@@ -244,18 +313,11 @@ export default function InputForm() {
         if (ghData) {
           const tc = ghData.events
             .filter((e) => e.type === "PushEvent")
-            .reduce(
-              (s, e) => s + (e.payload?.commits?.length || 0),
-              0
-            );
-          const stars = ghData.repos.reduce(
-            (s, r) => s + r.stargazers_count,
-            0
-          );
+            .reduce((s, e) => s + (e.payload?.commits?.length || 0), 0);
+          const stars = ghData.repos.reduce((s, r) => s + r.stargazers_count, 0);
           const langs: Record<string, number> = {};
           ghData.repos.forEach((r) => {
-            if (r.language)
-              langs[r.language] = (langs[r.language] || 0) + 1;
+            if (r.language) langs[r.language] = (langs[r.language] || 0) + 1;
           });
           const topL = Object.entries(langs)
             .sort((a, b) => b[1] - a[1])
@@ -263,8 +325,12 @@ export default function InputForm() {
             .map((e) => e[0])
             .join(", ");
           // コード系リポジトリとコンテンツ系リポジトリを区別
-          const codeRepos = [...new Set(ghData.events.map((e) => e.repo?.name))].filter(n => n && !isContentRepo(n));
-          const contentRepos = [...new Set(ghData.events.map((e) => e.repo?.name))].filter(n => n && isContentRepo(n));
+          const codeRepos = [...new Set(ghData.events.map((e) => e.repo?.name))].filter(
+            (n) => n && !isContentRepo(n)
+          );
+          const contentRepos = [
+            ...new Set(ghData.events.map((e) => e.repo?.name)),
+          ].filter((n) => n && isContentRepo(n));
           const bio = cleanBio(ghData.profile.bio || "");
           parts.push(
             `GitHub: ${ghu}, commits: ${tc}, code repos with activity: ${codeRepos.length} (${codeRepos.slice(0, 5).join(", ")}), content/blog repos: ${contentRepos.length}, public repos: ${ghData.profile.public_repos}, stars: ${stars}, top languages: ${topL}, PRs: ${ghData.events.filter((e) => e.type === "PullRequestEvent").length}${bio ? `, bio: ${bio}` : ""}`
@@ -274,10 +340,7 @@ export default function InputForm() {
           );
         }
         if (zennData) {
-          const likes = zennData.articles.reduce(
-            (s, a) => s + (a.liked_count || 0),
-            0
-          );
+          const likes = zennData.articles.reduce((s, a) => s + (a.liked_count || 0), 0);
           parts.push(
             `Zenn: ${zu}, ${zennData.articles.length} articles, ${likes} total likes, recent titles: ${zennData.articles
               .slice(0, 3)
@@ -310,7 +373,9 @@ export default function InputForm() {
   // -- Result view --
   if (hasResult) {
     return (
-      <div className={`min-h-screen dark-transition ${dark ? "dark bg-surface-dark text-text-dark" : "bg-neutral-100 text-text"}`}>
+      <div
+        className={`min-h-screen dark-transition ${dark ? "dark bg-surface-dark text-text-dark" : "bg-neutral-100 text-text"}`}
+      >
         <div className="p-4 md:p-8">
           {/* Toast */}
           {toast && (
@@ -327,12 +392,14 @@ export default function InputForm() {
 
           {/* Toolbar */}
           <div className="max-w-[1200px] mx-auto mb-4 flex gap-2 flex-wrap items-center print:hidden">
-            <ToolBtn onClick={() => {
-              setGh(null);
-              setZenn(null);
-              setAiComment(null);
-              setErrors([]);
-            }}>
+            <ToolBtn
+              onClick={() => {
+                setGh(null);
+                setZenn(null);
+                setAiComment(null);
+                setErrors([]);
+              }}
+            >
               <IconBack />
               別のユーザーで生成
             </ToolBtn>
@@ -394,7 +461,10 @@ export default function InputForm() {
 
         <div className="grid grid-cols-2 gap-4 mb-5">
           <div>
-            <label htmlFor="gh-user" className="text-sm font-semibold flex items-center gap-1.5 mb-1.5">
+            <label
+              htmlFor="gh-user"
+              className="text-sm font-semibold flex items-center gap-1.5 mb-1.5"
+            >
               <span className="bg-primary text-white text-[0.68em] px-1.5 py-0.5 rounded">
                 GitHub
               </span>
@@ -410,7 +480,10 @@ export default function InputForm() {
             />
           </div>
           <div>
-            <label htmlFor="zenn-user" className="text-sm font-semibold flex items-center gap-1.5 mb-1.5">
+            <label
+              htmlFor="zenn-user"
+              className="text-sm font-semibold flex items-center gap-1.5 mb-1.5"
+            >
               <span className="bg-[#3ea8ff] text-white text-[0.68em] px-1.5 py-0.5 rounded">
                 Zenn
               </span>
@@ -429,7 +502,10 @@ export default function InputForm() {
 
         {/* AI Settings */}
         <div className="border border-border-light rounded-xl p-4 mb-6">
-          <label htmlFor="gen-ai" className="flex items-center gap-2.5 text-sm cursor-pointer">
+          <label
+            htmlFor="gen-ai"
+            className="flex items-center gap-2.5 text-sm cursor-pointer"
+          >
             <input
               id="gen-ai"
               type="checkbox"
@@ -472,7 +548,10 @@ export default function InputForm() {
                 </div>
               </div>
               <div>
-                <label htmlFor="ai-model" className="text-xs font-semibold text-text-muted block mb-1.5">
+                <label
+                  htmlFor="ai-model"
+                  className="text-xs font-semibold text-text-muted block mb-1.5"
+                >
                   モデル
                 </label>
                 <select
@@ -509,7 +588,13 @@ export default function InputForm() {
 
         {errors.map((e, i) => (
           <p key={i} className="text-error text-sm mt-3 flex items-center gap-1">
-            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="w-4 h-4 flex-shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />

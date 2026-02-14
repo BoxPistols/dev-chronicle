@@ -49,6 +49,7 @@ Next.js 16 + TypeScript + Tailwind CSS 4 で構築した、GitHub/Zennの活動�
 ## 環境変数
 
 `.env.local` に設定（すべて任意）:
+
 - `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` -- AI所感生成
 - `GITHUB_TOKEN` -- レートリミット緩和
 

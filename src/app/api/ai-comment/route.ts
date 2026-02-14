@@ -63,11 +63,7 @@ async function callAnthropic(
   }
 
   const data = await res.json();
-  return (
-    data.content
-      ?.map((b: { text?: string }) => b.text || "")
-      .join("") || ""
-  );
+  return data.content?.map((b: { text?: string }) => b.text || "").join("") || "";
 }
 
 async function callGemini(
@@ -110,10 +106,7 @@ export async function POST(req: NextRequest) {
   try {
     const { summary, provider = "openai", model } = await req.json();
     if (!summary) {
-      return NextResponse.json(
-        { error: "summary is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "summary is required" }, { status: 400 });
     }
 
     let text = "";
@@ -135,11 +128,7 @@ export async function POST(req: NextRequest) {
           { status: 500 }
         );
       }
-      text = await callAnthropic(
-        apiKey,
-        model || "claude-sonnet-4-20250514",
-        summary
-      );
+      text = await callAnthropic(apiKey, model || "claude-sonnet-4-20250514", summary);
     } else if (provider === "gemini") {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {

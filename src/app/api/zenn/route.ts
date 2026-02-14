@@ -3,10 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   const username = req.nextUrl.searchParams.get("username");
   if (!username) {
-    return NextResponse.json(
-      { error: "username is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "username is required" }, { status: 400 });
   }
 
   try {

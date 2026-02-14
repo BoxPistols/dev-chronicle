@@ -186,9 +186,7 @@ describe("groupPushEventsByRepo", () => {
 
   it("同リポジトリのイベントをグループ化する", () => {
     const events = [
-      makeEvent("user/app", "2025-02-10T00:00:00Z", [
-        { sha: "a1", message: "fix bug" },
-      ]),
+      makeEvent("user/app", "2025-02-10T00:00:00Z", [{ sha: "a1", message: "fix bug" }]),
       makeEvent("user/app", "2025-02-12T00:00:00Z", [
         { sha: "b1", message: "add feature" },
       ]),

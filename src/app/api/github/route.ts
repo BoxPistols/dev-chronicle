@@ -33,8 +33,7 @@ async function fetchContributions(username: string, token: string) {
   if (!res.ok) return null;
 
   const data = await res.json();
-  const cal =
-    data?.data?.user?.contributionsCollection?.contributionCalendar;
+  const cal = data?.data?.user?.contributionsCollection?.contributionCalendar;
   if (!cal) return null;
 
   const levelMap: Record<string, number> = {
@@ -68,10 +67,7 @@ async function fetchContributions(username: string, token: string) {
 export async function GET(req: NextRequest) {
   const username = req.nextUrl.searchParams.get("username");
   if (!username) {
-    return NextResponse.json(
-      { error: "username is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "username is required" }, { status: 400 });
   }
 
   const headers: HeadersInit = {

@@ -5,10 +5,6 @@ export const metadata: Metadata = {
   description: "GitHub & Zenn 活動レポートの埋め込み表示",
 };
 
-export default function EmbedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function EmbedLayout({ children }: { children: React.ReactNode }) {
   return <div className="bg-white dark:bg-surface-dark min-h-screen">{children}</div>;
 }

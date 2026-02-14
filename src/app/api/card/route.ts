@@ -137,8 +137,7 @@ async function fetchGitHub(username: string) {
   ).length;
 
   const stars = repoList.reduce(
-    (s: number, r: { stargazers_count?: number }) =>
-      s + (r.stargazers_count || 0),
+    (s: number, r: { stargazers_count?: number }) => s + (r.stargazers_count || 0),
     0
   );
 
@@ -154,8 +153,7 @@ async function fetchGitHub(username: string) {
     .map(([name, count]) => ({
       name,
       count,
-      percent:
-        totalLangRepos > 0 ? Math.round((count / totalLangRepos) * 100) : 0,
+      percent: totalLangRepos > 0 ? Math.round((count / totalLangRepos) * 100) : 0,
     }));
 
   // Top repos by recently updated (non-fork)
@@ -185,8 +183,7 @@ async function fetchGitHub(username: string) {
       });
       if (gqlRes.ok) {
         const gql = await gqlRes.json();
-        const cal =
-          gql?.data?.user?.contributionsCollection?.contributionCalendar;
+        const cal = gql?.data?.user?.contributionsCollection?.contributionCalendar;
         if (cal) {
           const lm: Record<string, number> = {
             NONE: 0,
@@ -198,14 +195,10 @@ async function fetchGitHub(username: string) {
           contributions = {
             total: cal.totalContributions,
             weeks: cal.weeks.map(
-              (w: {
-                contributionDays: { contributionLevel: string }[];
-              }) => ({
-                days: w.contributionDays.map(
-                  (d: { contributionLevel: string }) => ({
-                    level: lm[d.contributionLevel] ?? 0,
-                  })
-                ),
+              (w: { contributionDays: { contributionLevel: string }[] }) => ({
+                days: w.contributionDays.map((d: { contributionLevel: string }) => ({
+                  level: lm[d.contributionLevel] ?? 0,
+                })),
               })
             ),
           };
@@ -349,19 +342,14 @@ function generateSvg(opts: {
   const textMain = dark ? "#e6edf3" : "#1f2328";
   const textSub = dark ? "#8b949e" : "#656d76";
   const accent = dark ? "#58a6ff" : "#0969da";
-  const accentSoft = dark
-    ? "rgba(56,139,253,0.15)"
-    : "rgba(9,105,218,0.08)";
+  const accentSoft = dark ? "rgba(56,139,253,0.15)" : "rgba(9,105,218,0.08)";
   const heartColor = dark ? "#f778ba" : "#cf222e";
   const contribColors = dark
     ? ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"]
     : ["#ebedf0", "#9be9a8", "#40c463", "#30a14e", "#216e39"];
 
   const displayName = esc(profile.name || profile.login);
-  const bio =
-    profile.bio && profile.bio.length > 0
-      ? esc(trunc(profile.bio, 70))
-      : "";
+  const bio = profile.bio && profile.bio.length > 0 ? esc(trunc(profile.bio, 70)) : "";
 
   const hasContrib = contributions && contributions.total > 0;
   const hasZenn = zenn && zennUser;
@@ -380,9 +368,7 @@ function generateSvg(opts: {
   const langsAndReposH = Math.max(langSectionH, repoSectionH);
   const zennSummaryH = hasZenn ? 46 : 0;
   const zennArticleRowH = 28;
-  const zennArticlesH = hasZennArticles
-    ? zenn!.articles.length * zennArticleRowH + 8
-    : 0;
+  const zennArticlesH = hasZennArticles ? zenn!.articles.length * zennArticleRowH + 8 : 0;
   const footerH = 12;
   const totalH =
     headerH +
@@ -475,10 +461,7 @@ function generateSvg(opts: {
     const weeks = contributions!.weeks.slice(-52);
     const numCols = weeks.length;
     const gap = 2;
-    const cellSize = Math.min(
-      9,
-      Math.floor((INNER - (numCols - 1) * gap) / numCols)
-    );
+    const cellSize = Math.min(9, Math.floor((INNER - (numCols - 1) * gap) / numCols));
     const step = cellSize + gap;
     const graphW = numCols * step - gap;
     const graphX = PAD + Math.floor((INNER - graphW) / 2);
@@ -516,8 +499,7 @@ function generateSvg(opts: {
 
     const barW = halfW - 80;
     langStats.forEach((lang) => {
-      const color =
-        LANG_COLORS[lang.name] || (dark ? "#8b949e" : "#6e7781");
+      const color = LANG_COLORS[lang.name] || (dark ? "#8b949e" : "#6e7781");
       svg += `<rect x="${PAD}" y="${ly}" width="${barW}" height="10" rx="5" fill="${dark ? "#21262d" : "#eef1f5"}"/>`;
       const fillW = Math.max(6, (lang.percent / 100) * barW);
       svg += `<rect x="${PAD}" y="${ly}" width="${fillW}" height="10" rx="5" fill="${color}"/>`;
@@ -535,9 +517,7 @@ function generateSvg(opts: {
     ry += 28;
 
     topRepos.forEach((repo) => {
-      const lc = repo.language
-        ? LANG_COLORS[repo.language] || textSub
-        : "transparent";
+      const lc = repo.language ? LANG_COLORS[repo.language] || textSub : "transparent";
       svg += `<circle cx="${rx + 5}" cy="${ry + 5}" r="4" fill="${lc}"/>`;
       svg += `<text x="${rx + 14}" y="${ry + 9}" class="t main" font-size="12">${esc(trunc(repo.name, 28))}</text>`;
       ry += repoRowH;

@@ -21,30 +21,34 @@ A developer's day-to-day work tends to scatter across fragmented records -- comm
 ## Key Features
 
 ### GitHub Activity Visualization
+
 Displays profile information, recent commit history (grouped by repository), pull request activity (color-coded by status), and featured repositories in distinct sections. Content-oriented repositories (e.g., zenn-content) are automatically distinguished from product development repositories.
 
 ### Zenn Article Integration
+
 Lists the latest articles alongside like counts, publication dates, and topics. Shown alongside GitHub activity, this gives a two-sided view of both code and writing output.
 
 ### AI Editor's Column
+
 Choose from three AI providers -- OpenAI, Anthropic Claude, or Google Gemini -- to auto-generate editorial commentary in a "newspaper column" tone based on your activity data. Multiple models are available per provider.
 
 ### Themes and Export
+
 Supports light/dark theme switching, HTML file download, clipboard copy, and browser printing. Exported HTML files include embedded fonts and styles, making them self-contained and viewable standalone.
 
 ---
 
 ## Tech Stack
 
-| Category | Technology |
-|----------|-----------|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript 5 (strict mode) |
-| UI | React 19, Tailwind CSS 4 |
-| Fonts | Noto Sans JP, Noto Serif JP (Google Fonts) |
-| Testing | Vitest 4, React Testing Library |
-| External APIs | GitHub REST API v3, Zenn API |
-| AI | OpenAI API, Anthropic Messages API, Google Gemini API |
+| Category      | Technology                                            |
+| ------------- | ----------------------------------------------------- |
+| Framework     | Next.js 16 (App Router)                               |
+| Language      | TypeScript 5 (strict mode)                            |
+| UI            | React 19, Tailwind CSS 4                              |
+| Fonts         | Noto Sans JP, Noto Serif JP (Google Fonts)            |
+| Testing       | Vitest 4, React Testing Library                       |
+| External APIs | GitHub REST API v3, Zenn API                          |
+| AI            | OpenAI API, Anthropic Messages API, Google Gemini API |
 
 ---
 
@@ -187,13 +191,13 @@ Open `http://localhost:3000` in your browser.
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run test` | Run tests |
-| `npm run test:watch` | Run tests in watch mode |
+| Command              | Description              |
+| -------------------- | ------------------------ |
+| `npm run dev`        | Start development server |
+| `npm run build`      | Production build         |
+| `npm run start`      | Start production server  |
+| `npm run test`       | Run tests                |
+| `npm run test:watch` | Run tests in watch mode  |
 
 ---
 
@@ -218,11 +222,11 @@ Dev Chronicle reports can be embedded in external web pages. The `/embed` endpoi
 
 ### Parameters
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `gh` | Either one | string | GitHub username |
-| `zenn` | Either one | string | Zenn username |
-| `dark` | Optional | `"1"` | Enable dark mode |
+| Parameter | Required   | Type   | Description      |
+| --------- | ---------- | ------ | ---------------- |
+| `gh`      | Either one | string | GitHub username  |
+| `zenn`    | Either one | string | Zenn username    |
+| `dark`    | Optional   | `"1"`  | Enable dark mode |
 
 Both `gh` and `zenn` can be specified together, or either one alone. If both are empty, an error message is displayed.
 
@@ -234,19 +238,28 @@ The most common approach -- load the report inside an iframe on an external HTML
 <!-- GitHub + Zenn -->
 <iframe
   src="https://your-domain.com/embed?gh=BoxPistols&zenn=aito"
-  width="100%" height="800" style="border: none;">
+  width="100%"
+  height="800"
+  style="border: none;"
+>
 </iframe>
 
 <!-- GitHub only, dark mode -->
 <iframe
   src="https://your-domain.com/embed?gh=BoxPistols&dark=1"
-  width="100%" height="800" style="border: none;">
+  width="100%"
+  height="800"
+  style="border: none;"
+>
 </iframe>
 
 <!-- Zenn only -->
 <iframe
   src="https://your-domain.com/embed?zenn=aito"
-  width="100%" height="800" style="border: none;">
+  width="100%"
+  height="800"
+  style="border: none;"
+>
 </iframe>
 ```
 
@@ -266,7 +279,8 @@ To auto-adjust iframe height on the embedding page, use a CSS aspect-ratio wrapp
 <div style="position: relative; width: 100%; padding-top: 150%; overflow: hidden;">
   <iframe
     src="https://your-domain.com/embed?gh=BoxPistols"
-    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;">
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+  >
   </iframe>
 </div>
 ```
@@ -282,13 +296,13 @@ For fixed height, use values between `height="800"` and `height="1200"`. When di
 
 ### Differences from Main Interface
 
-| Feature | Main (`/`) | Embed (`/embed`) |
-|---------|-----------|------------------|
-| Input form | Yes | No (set via parameters) |
-| Toolbar | Yes (theme, export) | No |
-| AI commentary | Yes (provider selectable) | Not available |
-| Dark mode | Button toggle | `?dark=1` parameter |
-| Layout | Standard padding | Minimal padding |
+| Feature       | Main (`/`)                | Embed (`/embed`)        |
+| ------------- | ------------------------- | ----------------------- |
+| Input form    | Yes                       | No (set via parameters) |
+| Toolbar       | Yes (theme, export)       | No                      |
+| AI commentary | Yes (provider selectable) | Not available           |
+| Dark mode     | Button toggle             | `?dark=1` parameter     |
+| Layout        | Standard padding          | Minimal padding         |
 
 ### Notes
 
@@ -311,11 +325,11 @@ The `/api/card` endpoint generates an SVG card image that can be embedded in a G
 
 ### Parameters
 
-| Parameter | Required | Type | Description |
-|-----------|----------|------|-------------|
-| `gh` | Required | string | GitHub username |
-| `zenn` | Optional | string | Zenn username (adds Zenn stats to the card) |
-| `dark` | Optional | `"1"` | Generate card in dark mode |
+| Parameter | Required | Type   | Description                                 |
+| --------- | -------- | ------ | ------------------------------------------- |
+| `gh`      | Required | string | GitHub username                             |
+| `zenn`    | Optional | string | Zenn username (adds Zenn stats to the card) |
+| `dark`    | Optional | `"1"`  | Generate card in dark mode                  |
 
 ### Usage in GitHub Profile README
 
@@ -349,13 +363,13 @@ Dark mode:
 
 ### Embed vs SVG Card
 
-| | SVG Card (`/api/card`) | Embed (`/embed`) |
-|--|------------------------|------------------|
-| Use case | GitHub README, Markdown | Web pages, iframes |
-| Format | SVG image | HTML (interactive) |
-| Detail level | Summary (stats-focused) | Full report (newspaper) |
-| AI commentary | No | No (use main interface) |
-| Links | No (image) | Yes (clickable) |
+|               | SVG Card (`/api/card`)  | Embed (`/embed`)        |
+| ------------- | ----------------------- | ----------------------- |
+| Use case      | GitHub README, Markdown | Web pages, iframes      |
+| Format        | SVG image               | HTML (interactive)      |
+| Detail level  | Summary (stats-focused) | Full report (newspaper) |
+| AI commentary | No                      | No (use main interface) |
+| Links         | No (image)              | Yes (clickable)         |
 
 ---
 

@@ -21,30 +21,34 @@ GitHubとZennの活動データから、新聞風のウィークリーレポー�
 ## 主な機能
 
 ### GitHub活動の可視化
+
 プロフィール情報、直近のコミット履歴（リポジトリ別にグループ化）、PR活動（ステータス別に色分け）、注目リポジトリをセクションごとに表示する。コンテンツ系リポジトリ（zenn-contentなど）とプロダクト開発リポジトリは自動的に区別される。
 
 ### Zenn記事の統合
+
 最新記事の一覧をいいね数・投稿日・トピックとともに掲載する。GitHubの活動と並べて表示することで、コードと文章の両面から活動を把握できる。
 
 ### AI編集者コラム
+
 OpenAI / Anthropic Claude / Google Gemini の3プロバイダから選択し、活動データをもとにした所感を「新聞コラム調」で自動生成する。プロバイダごとに複数のモデルを選択可能。
 
 ### テーマとエクスポート
+
 ライト/ダークテーマの切り替え、HTMLファイルのダウンロード、クリップボードへのHTMLコピー、ブラウザ印刷に対応。エクスポートされたHTMLはフォントやスタイルを含んでおり、単体で閲覧できる。
 
 ---
 
 ## 技術スタック
 
-| カテゴリ | 技術 |
-|---------|------|
-| フレームワーク | Next.js 16 (App Router) |
-| 言語 | TypeScript 5 (strict mode) |
-| UI | React 19, Tailwind CSS 4 |
-| フォント | Noto Sans JP, Noto Serif JP (Google Fonts) |
-| テスト | Vitest 4, React Testing Library |
-| 外部API | GitHub REST API v3, Zenn API |
-| AI | OpenAI API, Anthropic Messages API, Google Gemini API |
+| カテゴリ       | 技術                                                  |
+| -------------- | ----------------------------------------------------- |
+| フレームワーク | Next.js 16 (App Router)                               |
+| 言語           | TypeScript 5 (strict mode)                            |
+| UI             | React 19, Tailwind CSS 4                              |
+| フォント       | Noto Sans JP, Noto Serif JP (Google Fonts)            |
+| テスト         | Vitest 4, React Testing Library                       |
+| 外部API        | GitHub REST API v3, Zenn API                          |
+| AI             | OpenAI API, Anthropic Messages API, Google Gemini API |
 
 ---
 
@@ -187,13 +191,13 @@ npm run dev
 
 ## コマンド一覧
 
-| コマンド | 説明 |
-|---------|------|
-| `npm run dev` | 開発サーバー起動 |
-| `npm run build` | プロダクションビルド |
-| `npm run start` | プロダクションサーバー起動 |
-| `npm run test` | テスト実行 |
-| `npm run test:watch` | テスト監視モード |
+| コマンド             | 説明                       |
+| -------------------- | -------------------------- |
+| `npm run dev`        | 開発サーバー起動           |
+| `npm run build`      | プロダクションビルド       |
+| `npm run start`      | プロダクションサーバー起動 |
+| `npm run test`       | テスト実行                 |
+| `npm run test:watch` | テスト監視モード           |
 
 ---
 
@@ -218,11 +222,11 @@ Dev Chronicleのレポートを外部Webページに埋め込むことができ�
 
 ### パラメータ一覧
 
-| パラメータ | 必須 | 型 | 説明 |
-|-----------|------|-----|------|
-| `gh` | どちらか一方 | string | GitHubユーザー名 |
-| `zenn` | どちらか一方 | string | Zennユーザー名 |
-| `dark` | 任意 | `"1"` | ダークモードで表示する場合に指定 |
+| パラメータ | 必須         | 型     | 説明                             |
+| ---------- | ------------ | ------ | -------------------------------- |
+| `gh`       | どちらか一方 | string | GitHubユーザー名                 |
+| `zenn`     | どちらか一方 | string | Zennユーザー名                   |
+| `dark`     | 任意         | `"1"`  | ダークモードで表示する場合に指定 |
 
 `gh` と `zenn` は両方指定することも、片方だけでも動作する。両方とも空の場合はエラーメッセージが表示される。
 
@@ -234,19 +238,28 @@ Dev Chronicleのレポートを外部Webページに埋め込むことができ�
 <!-- GitHub + Zenn の両方を表示 -->
 <iframe
   src="https://your-domain.com/embed?gh=BoxPistols&zenn=aito"
-  width="100%" height="800" style="border: none;">
+  width="100%"
+  height="800"
+  style="border: none;"
+>
 </iframe>
 
 <!-- GitHubのみ、ダークモード -->
 <iframe
   src="https://your-domain.com/embed?gh=BoxPistols&dark=1"
-  width="100%" height="800" style="border: none;">
+  width="100%"
+  height="800"
+  style="border: none;"
+>
 </iframe>
 
 <!-- Zennのみ -->
 <iframe
   src="https://your-domain.com/embed?zenn=aito"
-  width="100%" height="800" style="border: none;">
+  width="100%"
+  height="800"
+  style="border: none;"
+>
 </iframe>
 ```
 
@@ -266,7 +279,8 @@ https://your-domain.com/embed?gh=BoxPistols&zenn=aito
 <div style="position: relative; width: 100%; padding-top: 150%; overflow: hidden;">
   <iframe
     src="https://your-domain.com/embed?gh=BoxPistols"
-    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;">
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+  >
   </iframe>
 </div>
 ```
@@ -282,13 +296,13 @@ https://your-domain.com/embed?gh=BoxPistols&zenn=aito
 
 ### 通常画面との違い
 
-| 項目 | 通常画面 (`/`) | Embed (`/embed`) |
-|------|---------------|------------------|
-| 入力フォーム | あり | なし（パラメータで指定） |
-| ツールバー | あり（テーマ切替・エクスポート） | なし |
-| AI所感 | あり（プロバイダ選択可） | 非対応 |
-| ダークモード | ボタンで切替 | `?dark=1` で指定 |
-| レイアウト | 余白あり | 最小限の余白 |
+| 項目         | 通常画面 (`/`)                   | Embed (`/embed`)         |
+| ------------ | -------------------------------- | ------------------------ |
+| 入力フォーム | あり                             | なし（パラメータで指定） |
+| ツールバー   | あり（テーマ切替・エクスポート） | なし                     |
+| AI所感       | あり（プロバイダ選択可）         | 非対応                   |
+| ダークモード | ボタンで切替                     | `?dark=1` で指定         |
+| レイアウト   | 余白あり                         | 最小限の余白             |
 
 ### 注意事項
 
@@ -311,11 +325,11 @@ GitHubプロフィールのREADMEに貼り付けられるSVGカード画像を�
 
 ### パラメータ
 
-| パラメータ | 必須 | 型 | 説明 |
-|-----------|------|-----|------|
-| `gh` | 必須 | string | GitHubユーザー名 |
-| `zenn` | 任意 | string | Zennユーザー名（指定するとZenn統計が追加表示される） |
-| `dark` | 任意 | `"1"` | ダークモードでカードを生成 |
+| パラメータ | 必須 | 型     | 説明                                                 |
+| ---------- | ---- | ------ | ---------------------------------------------------- |
+| `gh`       | 必須 | string | GitHubユーザー名                                     |
+| `zenn`     | 任意 | string | Zennユーザー名（指定するとZenn統計が追加表示される） |
+| `dark`     | 任意 | `"1"`  | ダークモードでカードを生成                           |
 
 ### GitHub プロフィール README での使い方
 
@@ -349,13 +363,13 @@ GitHubプロフィールのREADMEに貼り付けられるSVGカード画像を�
 
 ### Embed との使い分け
 
-| | SVGカード (`/api/card`) | Embed (`/embed`) |
-|--|------------------------|------------------|
-| 用途 | GitHub README、Markdown | Webページ、iframe |
-| 形式 | SVG画像 | HTML（インタラクティブ） |
-| 情報量 | サマリー（統計中心） | フルレポート（新聞形式） |
-| AI所感 | なし | なし（通常画面で対応） |
-| リンク | なし（画像のため） | あり（クリック可能） |
+|        | SVGカード (`/api/card`) | Embed (`/embed`)         |
+| ------ | ----------------------- | ------------------------ |
+| 用途   | GitHub README、Markdown | Webページ、iframe        |
+| 形式   | SVG画像                 | HTML（インタラクティブ） |
+| 情報量 | サマリー（統計中心）    | フルレポート（新聞形式） |
+| AI所感 | なし                    | なし（通常画面で対応）   |
+| リンク | なし（画像のため）      | あり（クリック可能）     |
 
 ---
 

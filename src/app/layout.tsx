@@ -3,12 +3,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "週刊デベロッパー・クロニクル",
-  description:
-    "GitHub & Zenn のアクティビティから自動生成する開発者向け週刊新聞",
+  description: "GitHub & Zenn のアクティビティから自動生成する開発者向け週刊新聞",
   openGraph: {
     title: "週刊デベロッパー・クロニクル",
-    description:
-      "GitHub & Zenn のアクティビティから自動生成する開発者向け週刊新聞",
+    description: "GitHub & Zenn のアクティビティから自動生成する開発者向け週刊新聞",
     locale: "ja_JP",
     type: "website",
   },
@@ -21,11 +19,7 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
       <body className="bg-neutral-100 min-h-screen">{children}</body>

@@ -15,10 +15,7 @@ export function shortDate(d: string) {
 
 /** 指定日からの経過日数 */
 export function daysAgo(d: string) {
-  return Math.max(
-    0,
-    Math.floor((Date.now() - new Date(d).getTime()) / 86400000)
-  );
+  return Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 86400000));
 }
 
 /** コンテンツ/ブログ系リポジトリか判定 */
