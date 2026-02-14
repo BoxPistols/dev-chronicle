@@ -513,7 +513,7 @@ export default function InputForm() {
           </label>
           {genAI && (
             <p className="mt-2 ml-7 text-xs text-text-muted dark:text-text-dark-muted animate-[fadeInUp_0.2s_ease]">
-              GPT-4.1 Nano -- 1日3回まで
+              GPT-5 Nano -- 1日3回まで
             </p>
           )}
         </div>

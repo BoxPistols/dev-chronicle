@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const text = await callOpenAI(apiKey, "gpt-4.1-nano", summary);
+    const text = await callOpenAI(apiKey, "gpt-5-nano", summary);
 
     return NextResponse.json(
       { comment: text },
