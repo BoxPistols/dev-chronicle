@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import type { GitHubData, ZennData } from "@/types";
@@ -10,7 +10,21 @@ function EmbedContent() {
   const searchParams = useSearchParams();
   const ghUser = searchParams.get("gh") || "";
   const zennUser = searchParams.get("zenn") || "";
-  const dark = searchParams.get("dark") === "1";
+  const darkParam = searchParams.get("dark");
+  const dark = useMemo(() => {
+    if (darkParam === "1") return true;
+    if (darkParam === "0") return false;
+    if (typeof window !== "undefined") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+    return false;
+  }, [darkParam]);
+
+  // sync dark class to <html>
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    return () => document.documentElement.classList.remove("dark");
+  }, [dark]);
 
   const [gh, setGh] = useState<GitHubData | null>(null);
   const [zenn, setZenn] = useState<ZennData | null>(null);
@@ -72,10 +86,10 @@ function EmbedContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen dark-transition">
         <div className="text-center">
           <svg
-            className="w-8 h-8 animate-spin mx-auto text-text-muted"
+            className="w-8 h-8 animate-spin mx-auto text-text-muted dark:text-text-dark-muted"
             viewBox="0 0 24 24"
             fill="none"
           >
@@ -93,7 +107,9 @@ function EmbedContent() {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          <p className="mt-3 text-sm text-text-muted">レポートを生成中...</p>
+          <p className="mt-3 text-sm text-text-muted dark:text-text-dark-muted">
+            レポートを生成中...
+          </p>
         </div>
       </div>
     );
@@ -101,9 +117,9 @@ function EmbedContent() {
 
   if (errors.length > 0 && !gh && !zenn) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-8">
+      <div className="flex items-center justify-center min-h-screen p-8 dark-transition">
         <div className="max-w-md text-center">
-          <h1 className="font-serif text-lg font-bold text-primary mb-4">
+          <h1 className="font-serif text-lg font-bold text-primary dark:text-white mb-4">
             Dev Chronicle - Embed
           </h1>
           {errors.map((e, i) => (
@@ -111,7 +127,7 @@ function EmbedContent() {
               {e}
             </p>
           ))}
-          <p className="text-text-muted text-xs mt-4">
+          <p className="text-text-muted dark:text-text-dark-muted text-xs mt-4">
             使い方: /embed?gh=GitHubユーザー名&amp;zenn=Zennユーザー名
           </p>
         </div>
@@ -120,9 +136,7 @@ function EmbedContent() {
   }
 
   return (
-    <div
-      className={`min-h-screen dark-transition ${dark ? "dark bg-surface-dark text-text-dark" : "bg-white text-text"}`}
-    >
+    <div className="min-h-screen dark-transition bg-white dark:bg-surface-dark text-text dark:text-text-dark">
       <div className="p-4 md:p-8">
         {errors.map((e, i) => (
           <p key={i} className="text-error text-sm mb-2 max-w-[1200px] mx-auto">
@@ -147,7 +161,9 @@ export default function EmbedPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-sm text-text-muted">読み込み中...</p>
+          <p className="text-sm text-text-muted dark:text-text-dark-muted">
+            読み込み中...
+          </p>
         </div>
       }
     >

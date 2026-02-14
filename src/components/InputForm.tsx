@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import type { GitHubData, ZennData } from "@/types";
 import { isContentRepo, cleanBio } from "@/lib/utils";
 import Newspaper from "./Newspaper";
@@ -198,6 +198,20 @@ export default function InputForm() {
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const newspaperRef = useRef<HTMLDivElement>(null);
 
+  // system dark mode preference detection
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    setDark(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setDark(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // sync dark class to <html>
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+  }, [dark]);
+
   const hasResult = gh || zenn;
 
   const showToast = useCallback((msg: string, ok = true) => {
@@ -373,9 +387,7 @@ export default function InputForm() {
   // -- Result view --
   if (hasResult) {
     return (
-      <div
-        className={`min-h-screen dark-transition ${dark ? "dark bg-surface-dark text-text-dark" : "bg-neutral-100 text-text"}`}
-      >
+      <div className="min-h-screen dark-transition bg-neutral-100 dark:bg-surface-dark text-text dark:text-text-dark">
         <div className="p-4 md:p-8">
           {/* Toast */}
           {toast && (
@@ -448,13 +460,24 @@ export default function InputForm() {
 
   // -- Input Form --
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-surface p-8 rounded-2xl shadow-lg border border-border-light">
+    <div className="min-h-screen bg-neutral-50 dark:bg-surface-dark flex items-center justify-center p-4 dark-transition">
+      <div className="w-full max-w-lg bg-surface dark:bg-surface-dark-alt p-8 rounded-2xl shadow-lg border border-border-light dark:border-border-dark dark-transition">
+        {/* Dark mode toggle */}
+        <div className="flex justify-end -mt-2 -mr-2 mb-1">
+          <button
+            onClick={() => setDark((d) => !d)}
+            className="p-2 rounded-lg text-text-muted dark:text-text-dark-muted hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+            aria-label={dark ? "ライトモードに切替" : "ダークモードに切替"}
+          >
+            {dark ? <IconSun /> : <IconMoon />}
+          </button>
+        </div>
+
         <div className="text-center mb-8">
-          <h1 className="font-serif text-[1.6em] font-bold text-primary tracking-wide">
+          <h1 className="font-serif text-[1.6em] font-bold text-primary dark:text-white tracking-wide">
             週刊デベロッパー・クロニクル
           </h1>
-          <p className="text-text-muted text-sm mt-1.5">
+          <p className="text-text-muted dark:text-text-dark-muted text-sm mt-1.5">
             GitHub &amp; Zenn から新聞を自動生成
           </p>
         </div>
@@ -463,7 +486,7 @@ export default function InputForm() {
           <div>
             <label
               htmlFor="gh-user"
-              className="text-sm font-semibold flex items-center gap-1.5 mb-1.5"
+              className="text-sm font-semibold flex items-center gap-1.5 mb-1.5 dark:text-text-dark"
             >
               <span className="bg-primary text-white text-[0.68em] px-1.5 py-0.5 rounded">
                 GitHub
@@ -476,13 +499,13 @@ export default function InputForm() {
               onChange={(e) => setGhUser(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && generate()}
               placeholder="例: BoxPistols"
-              className="w-full px-3.5 py-2.5 border border-border-light rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
+              className="w-full px-3.5 py-2.5 border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark rounded-lg text-sm text-text dark:text-text-dark placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
             />
           </div>
           <div>
             <label
               htmlFor="zenn-user"
-              className="text-sm font-semibold flex items-center gap-1.5 mb-1.5"
+              className="text-sm font-semibold flex items-center gap-1.5 mb-1.5 dark:text-text-dark"
             >
               <span className="bg-[#3ea8ff] text-white text-[0.68em] px-1.5 py-0.5 rounded">
                 Zenn
@@ -495,13 +518,13 @@ export default function InputForm() {
               onChange={(e) => setZennUser(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && generate()}
               placeholder="例: aito"
-              className="w-full px-3.5 py-2.5 border border-border-light rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
+              className="w-full px-3.5 py-2.5 border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark rounded-lg text-sm text-text dark:text-text-dark placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
             />
           </div>
         </div>
 
         {/* AI Settings */}
-        <div className="border border-border-light rounded-xl p-4 mb-6">
+        <div className="border border-border-light dark:border-border-dark rounded-xl p-4 mb-6">
           <label
             htmlFor="gen-ai"
             className="flex items-center gap-2.5 text-sm cursor-pointer"
@@ -513,20 +536,26 @@ export default function InputForm() {
               onChange={(e) => setGenAI(e.target.checked)}
               className="rounded accent-accent w-4 h-4 cursor-pointer"
             />
-            <span className="font-medium">AI編集者の所感を生成する</span>
+            <span className="font-medium dark:text-text-dark">
+              AI編集者の所感を生成する
+            </span>
           </label>
 
           {genAI && (
             <div className="mt-4 space-y-3 animate-[fadeInUp_0.2s_ease]">
               <div>
-                <label className="text-xs font-semibold text-text-muted block mb-1.5">
+                <label className="text-xs font-semibold text-text-muted dark:text-text-dark-muted block mb-1.5">
                   AIプロバイダ
                 </label>
                 <div className="flex gap-2">
                   {(
                     [
                       { key: "openai", label: "OpenAI", color: "bg-green-600" },
-                      { key: "anthropic", label: "Anthropic", color: "bg-orange-600" },
+                      {
+                        key: "anthropic",
+                        label: "Anthropic",
+                        color: "bg-orange-600",
+                      },
                       { key: "gemini", label: "Gemini", color: "bg-blue-600" },
                     ] as const
                   ).map(({ key, label, color }) => (
@@ -539,7 +568,7 @@ export default function InputForm() {
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                         aiProvider === key
                           ? `${color} text-white shadow-sm`
-                          : "bg-neutral-100 text-text-muted hover:bg-neutral-200"
+                          : "bg-neutral-100 dark:bg-neutral-800 text-text-muted dark:text-text-dark-muted hover:bg-neutral-200 dark:hover:bg-neutral-700"
                       }`}
                     >
                       {label}
@@ -550,7 +579,7 @@ export default function InputForm() {
               <div>
                 <label
                   htmlFor="ai-model"
-                  className="text-xs font-semibold text-text-muted block mb-1.5"
+                  className="text-xs font-semibold text-text-muted dark:text-text-dark-muted block mb-1.5"
                 >
                   モデル
                 </label>
@@ -558,7 +587,7 @@ export default function InputForm() {
                   id="ai-model"
                   value={aiModel}
                   onChange={(e) => setAiModel(e.target.value)}
-                  className="w-full px-3 py-2 border border-border-light rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors cursor-pointer"
+                  className="w-full px-3 py-2 border border-border-light dark:border-border-dark bg-white dark:bg-surface-dark text-text dark:text-text-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors cursor-pointer"
                 >
                   {AI_MODELS[aiProvider].map((m) => (
                     <option key={m.id} value={m.id}>
@@ -574,7 +603,7 @@ export default function InputForm() {
         <button
           onClick={generate}
           disabled={loading || (!ghUser.trim() && !zennUser.trim())}
-          className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary-light disabled:bg-neutral-300 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center gap-2"
+          className="w-full py-3 bg-primary dark:bg-accent text-white font-bold rounded-xl hover:bg-primary-light dark:hover:bg-accent-hover disabled:bg-neutral-300 dark:disabled:bg-neutral-700 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
@@ -603,14 +632,14 @@ export default function InputForm() {
           </p>
         ))}
 
-        <div className="mt-6 p-4 bg-neutral-50 rounded-xl text-[0.78em] text-text-muted leading-relaxed border border-border-light">
-          <strong className="text-text text-[1.05em]">
+        <div className="mt-6 p-4 bg-neutral-50 dark:bg-surface-dark rounded-xl text-[0.78em] text-text-muted dark:text-text-dark-muted leading-relaxed border border-border-light dark:border-border-dark">
+          <strong className="text-text dark:text-text-dark text-[1.05em]">
             データソース（認証不要の公開API）
           </strong>
           <div className="mt-1.5 space-y-0.5">
             <div>GitHub: プロフィール / イベント100件 / リポジトリ30件</div>
             <div>Zenn: 最新記事20件（タイトル・いいね数・投稿日）</div>
-            <div className="text-text-muted/70">※ どちらか片方だけでもOK</div>
+            <div className="opacity-70">※ どちらか片方だけでもOK</div>
           </div>
         </div>
       </div>
